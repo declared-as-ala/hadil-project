@@ -1,0 +1,29 @@
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--gray-400);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--gray-600);
+  margin-bottom: 4px;
+}
+
+.empty-state-description {
+  font-size: var(--text-sm);
+  color: var(--gray-400);
+  margin-bottom: 20px;
+}
+
+.empty-state-action {
+  display: flex;
+  justify-content: center;
+}

@@ -1,0 +1,140 @@
+.topnav {
+  height: var(--topbar-height);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
+}
+
+.topnav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topnav-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--gray-600);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--border-radius);
+}
+
+.topnav-menu-btn:hover {
+  background: var(--gray-100);
+}
+
+.topnav-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.topnav-search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 0.85rem;
+  opacity: 0.5;
+}
+
+.topnav-search-input {
+  padding: 8px 12px 8px 36px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-full);
+  background: var(--gray-50);
+  font-size: var(--text-sm);
+  width: 280px;
+  transition: all 0.2s ease;
+}
+
+.topnav-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+  width: 320px;
+}
+
+.topnav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topnav-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topnav-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.topnav-user-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.topnav-user-role {
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+}
+
+.topnav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.topnav-logout {
+  color: var(--gray-500) !important;
+}
+
+.topnav-logout:hover {
+  color: var(--color-danger) !important;
+  background: var(--color-danger-light) !important;
+}
+
+@media (max-width: 768px) {
+  .topnav-menu-btn {
+    display: flex;
+  }
+
+  .topnav-search-input {
+    width: 180px;
+  }
+
+  .topnav-search-input:focus {
+    width: 200px;
+  }
+
+  .topnav-user-info {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .topnav-search {
+    display: none;
+  }
+}
