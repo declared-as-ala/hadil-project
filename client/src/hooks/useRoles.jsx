@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './useAuth';
 
 /**
@@ -15,8 +15,7 @@ export function useHasRole(...allowedRoles) {
  * Protected route wrapper. Redirects to /login if not authenticated.
  */
 export function RequireAuth({ children, roles }) {
-  const { isAuthenticated, loading } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated, loading, role } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -28,15 +27,12 @@ export function RequireAuth({ children, roles }) {
   }
 
   if (!isAuthenticated) {
-    navigate('/login', { state: { from: location }, replace: true });
-    return null;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (roles && roles.length > 0) {
-    const { role } = useAuth();
     if (!roles.includes(role)) {
-      navigate('/unauthorized', { replace: true });
-      return null;
+      return <Navigate to="/unauthorized" replace />;
     }
   }
 

@@ -21,6 +21,7 @@ export default function EmployeFormPage() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(isEdit);
+  const [employeeInfo, setEmployeeInfo] = useState(null);
 
   useEffect(() => {
     if (isEdit) loadEmploye();
@@ -31,8 +32,9 @@ export default function EmployeFormPage() {
     try {
       const res = await employesAPI.getById(id);
       const d = res.data || {};
+      setEmployeeInfo(d.utilisateur);
       setForm({
-        utilisateurId: d.utilisateur?.id || '',
+        utilisateurId: d.utilisateur?._id || d.utilisateur?.id || (typeof d.utilisateur === 'string' ? d.utilisateur : ''),
         poste: d.poste || '',
         departement: d.departement || '',
         dateEmbauche: d.dateEmbauche ? d.dateEmbauche.slice(0, 10) : '',
@@ -93,21 +95,31 @@ export default function EmployeFormPage() {
 
       <div className="card" style={{ maxWidth: 700 }}>
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label form-label_required" htmlFor="utilisateurId">
-              User ID
-            </label>
-            <input
-              id="utilisateurId"
-              name="utilisateurId"
-              className={`form-input ${errors.utilisateurId ? 'form-input-error' : ''}`}
-              placeholder="Enter the user's MongoDB ID"
-              value={form.utilisateurId}
-              onChange={handleChange}
-            />
-            {errors.utilisateurId && <span className="form-error">{errors.utilisateurId}</span>}
-            <span className="form-hint">The ID of the User account to link this employee to.</span>
-          </div>
+          {isEdit ? (
+            <div className="form-group">
+              <label className="form-label">Employee</label>
+              <div className="form-input" style={{ backgroundColor: '#f9fafb', color: '#6b7280' }}>
+                {employeeInfo ? `${employeeInfo.nom || employeeInfo.fullName || ''} ${employeeInfo.prenom || ''}`.trim() + ` (${employeeInfo.email})` : 'Loading...'}
+              </div>
+              <span className="form-hint">You cannot change the linked user account.</span>
+            </div>
+          ) : (
+            <div className="form-group">
+              <label className="form-label form-label_required" htmlFor="utilisateurId">
+                User ID
+              </label>
+              <input
+                id="utilisateurId"
+                name="utilisateurId"
+                className={`form-input ${errors.utilisateurId ? 'form-input-error' : ''}`}
+                placeholder="Enter the user's MongoDB ID"
+                value={form.utilisateurId}
+                onChange={handleChange}
+              />
+              {errors.utilisateurId && <span className="form-error">{errors.utilisateurId}</span>}
+              <span className="form-hint">The ID of the User account to link this employee to.</span>
+            </div>
+          )}
 
           <div className="form-row">
             <div className="form-group">

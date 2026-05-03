@@ -1,7 +1,9 @@
 const { z } = require('zod');
 const dotenv = require('dotenv');
+const path = require('path');
 
-dotenv.config();
+// Load environment variables from .env file in Backend root
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

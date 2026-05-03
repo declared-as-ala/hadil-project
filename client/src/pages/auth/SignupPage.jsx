@@ -10,8 +10,7 @@ export default function SignupPage() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    nom: '',
-    prenom: '',
+    fullName: '',
     email: '',
     adresse: '',
     password: '',
@@ -30,8 +29,7 @@ export default function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
-    if (!formData.nom.trim()) newErrors.nom = 'Last name is required';
-    if (!formData.prenom.trim()) newErrors.prenom = 'First name is required';
+    if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email address';
     if (!formData.password) newErrors.password = 'Password is required';
@@ -45,8 +43,7 @@ export default function SignupPage() {
     setLoading(true);
     try {
       await signup({
-        nom: formData.nom,
-        prenom: formData.prenom,
+        fullName: formData.fullName,
         email: formData.email,
         adresse: formData.adresse,
         password: formData.password,
@@ -138,24 +135,13 @@ export default function SignupPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="auth-form" noValidate>
-              <div className="auth-form-row">
-                <div className={`auth-input-group ${errors.nom ? 'auth-input-error' : ''} ${focusedField === 'nom' ? 'auth-input-focused' : ''}`}>
-                  <label className="auth-input-label" htmlFor="nom">Last name</label>
-                  <div className="auth-input-wrapper">
-                    <span className="auth-input-icon">&#128100;</span>
-                    <input id="nom" name="nom" type="text" className="auth-input" placeholder="Dupont" value={formData.nom} onChange={handleChange} onFocus={() => setFocusedField('nom')} onBlur={() => setFocusedField(null)} />
-                  </div>
-                  {errors.nom && <span className="auth-field-error">{errors.nom}</span>}
+              <div className={`auth-input-group ${errors.fullName ? 'auth-input-error' : ''} ${focusedField === 'fullName' ? 'auth-input-focused' : ''}`}>
+                <label className="auth-input-label" htmlFor="fullName">Full name</label>
+                <div className="auth-input-wrapper">
+                  <span className="auth-input-icon">&#128100;</span>
+                  <input id="fullName" name="fullName" type="text" className="auth-input" placeholder="Jean Dupont" value={formData.fullName} onChange={handleChange} onFocus={() => setFocusedField('fullName')} onBlur={() => setFocusedField(null)} />
                 </div>
-
-                <div className={`auth-input-group ${errors.prenom ? 'auth-input-error' : ''} ${focusedField === 'prenom' ? 'auth-input-focused' : ''}`}>
-                  <label className="auth-input-label" htmlFor="prenom">First name</label>
-                  <div className="auth-input-wrapper">
-                    <span className="auth-input-icon">&#128100;</span>
-                    <input id="prenom" name="prenom" type="text" className="auth-input" placeholder="Jean" value={formData.prenom} onChange={handleChange} onFocus={() => setFocusedField('prenom')} onBlur={() => setFocusedField(null)} />
-                  </div>
-                  {errors.prenom && <span className="auth-field-error">{errors.prenom}</span>}
-                </div>
+                {errors.fullName && <span className="auth-field-error">{errors.fullName}</span>}
               </div>
 
               <div className={`auth-input-group ${errors.email ? 'auth-input-error' : ''} ${focusedField === 'email' ? 'auth-input-focused' : ''}`}>

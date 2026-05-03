@@ -12,7 +12,7 @@ import '../CrudPage.css';
 import './Messages.css';
 
 export default function MessagesPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const toast = useApiToast();
   const [messages, setMessages] = useState([]);
   const [employes, setEmployes] = useState([]);
@@ -21,7 +21,7 @@ export default function MessagesPage() {
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [form, setForm] = useState({ expediteurId: '', destinataireId: '', message: '' });
+  const [form, setForm] = useState({ destinataireId: '', message: '' });
   const [formLoading, setFormLoading] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
 
@@ -30,9 +30,16 @@ export default function MessagesPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const userId = user?.id;
+      // Messages store Employe IDs — only pass the filter when we have a real ID
+      const employeeId = user?.employeeId;
+      const isValidId = (v) => v && v !== 'null' && v !== 'undefined';
+
+      const msgParams = isValidId(employeeId)
+        ? (view === 'inbox' ? { destinataireId: employeeId } : { expediteurId: employeeId })
+        : {}; // admin with no employee record: load all messages
+
       const [mRes, eRes] = await Promise.all([
-        messagesAPI.getAll(view === 'inbox' ? { destinataireId: userId } : { expediteurId: userId }),
+        messagesAPI.getAll(msgParams),
         employesAPI.getAll(),
       ]);
       setMessages(mRes.data || []);
@@ -48,7 +55,10 @@ export default function MessagesPage() {
       await messagesAPI.send(form);
       toast.success('Sent', 'Message has been sent.');
       setShowForm(false);
-      setForm({ expediteurId: '', destinataireId: '', message: '' });
+      setForm({ destinataireId: '', message: '' });
+      // If user had no employeeId, the backend just auto-created one — refresh to store it
+      const isValidId = (v) => v && v !== 'null' && v !== 'undefined';
+      if (!isValidId(user?.employeeId)) await refreshUser();
       loadData();
     } catch (err) { toast.error(err); }
     finally { setFormLoading(false); }

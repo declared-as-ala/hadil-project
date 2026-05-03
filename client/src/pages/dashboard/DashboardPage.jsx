@@ -39,6 +39,10 @@ export default function DashboardPage() {
   async function loadDashboard() {
     setLoading(true);
     try {
+      const isAdminOrRH = role === ROLES.ADMIN || role === ROLES.RH;
+      const isEmploye = role === ROLES.EMPLOYE;
+      const isStagiaire = role === ROLES.STAGIAIRE;
+
       const [
         employesRes,
         stagiairesRes,
@@ -48,13 +52,13 @@ export default function DashboardPage() {
         congesRes,
         demandesRes,
       ] = await Promise.allSettled([
-        employesAPI.getAll(),
-        stagiairesAPI.getAll(),
-        projetsAPI.getAll(),
-        contratsAPI.getAll(),
-        absencesAPI.getAll(),
-        congesAPI.getAll(),
-        demandesAPI.getAll(),
+        isAdminOrRH ? employesAPI.getAll() : Promise.resolve({ data: [] }),
+        isAdminOrRH ? stagiairesAPI.getAll() : Promise.resolve({ data: [] }),
+        (isAdminOrRH || isEmploye) ? projetsAPI.getAll() : Promise.resolve({ data: [] }),
+        isAdminOrRH ? contratsAPI.getAll() : Promise.resolve({ data: [] }),
+        (isAdminOrRH || isEmploye) ? absencesAPI.getAll() : Promise.resolve({ data: [] }),
+        (isAdminOrRH || isEmploye) ? congesAPI.getAll() : Promise.resolve({ data: [] }),
+        (isAdminOrRH || isEmploye || isStagiaire) ? demandesAPI.getAll() : Promise.resolve({ data: [] }),
       ]);
 
       setStats({
@@ -188,27 +192,27 @@ export default function DashboardPage() {
               {isAdminOrRH && (
                 <>
                   <Link to="/employes" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83D\uDC65</span>
+                    <span className="quick-action-icon">👥</span>
                     <span>Employees</span>
                   </Link>
                   <Link to="/stagiaires" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83C\uDF93</span>
+                    <span className="quick-action-icon">🎓</span>
                     <span>Interns</span>
                   </Link>
                   <Link to="/contrats" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83D\uDCC4</span>
+                    <span className="quick-action-icon">📄</span>
                     <span>Contracts</span>
                   </Link>
                   <Link to="/conges" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83C\uDFD6\uFE0F</span>
+                    <span className="quick-action-icon">🏖️</span>
                     <span>Leaves</span>
                   </Link>
                   <Link to="/projets" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83D\uDE80</span>
+                    <span className="quick-action-icon">🚀</span>
                     <span>Projects</span>
                   </Link>
                   <Link to="/messages" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83D\uDCAC</span>
+                    <span className="quick-action-icon">💬</span>
                     <span>Messages</span>
                   </Link>
                 </>
@@ -216,19 +220,19 @@ export default function DashboardPage() {
               {role === ROLES.EMPLOYE && (
                 <>
                   <Link to="/demandes" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83D\uDCE9</span>
+                    <span className="quick-action-icon">📩</span>
                     <span>New Request</span>
                   </Link>
                   <Link to="/conges" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83C\uDFD6\uFE0F</span>
+                    <span className="quick-action-icon">🏖️</span>
                     <span>Request Leave</span>
                   </Link>
                   <Link to="/messages" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83D\uDCAC</span>
+                    <span className="quick-action-icon">💬</span>
                     <span>Messages</span>
                   </Link>
                   <Link to="/projets" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83D\uDE80</span>
+                    <span className="quick-action-icon">🚀</span>
                     <span>My Projects</span>
                   </Link>
                 </>
@@ -236,11 +240,11 @@ export default function DashboardPage() {
               {role === ROLES.STAGIAIRE && (
                 <>
                   <Link to="/demandes" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83D\uDCE9</span>
+                    <span className="quick-action-icon">📩</span>
                     <span>My Requests</span>
                   </Link>
                   <Link to="/messages" className="quick-action-btn">
-                    <span className="quick-action-icon">\uD83D\uDCAC</span>
+                    <span className="quick-action-icon">💬</span>
                     <span>Messages</span>
                   </Link>
                 </>

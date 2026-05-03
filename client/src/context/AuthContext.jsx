@@ -68,7 +68,8 @@ export function AuthProvider({ children }) {
   const refreshUser = useCallback(async () => {
     try {
       const res = await authAPI.getMe();
-      const userData = res.data;
+      // getMe returns: { success, data: { user: {...} } }
+      const userData = res.data?.user || res.data;
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
     } catch {

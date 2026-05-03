@@ -21,11 +21,11 @@ export default function StatCard({ icon, label, value, change, changeType }) {
 
 function getIcon(type) {
   const icons = {
-    blue: '\uD83D\uDCCA',
-    green: '\u2705',
-    yellow: '\u23F0',
-    red: '\u2764\uFE0F',
-    purple: '\uD83D\uDC65',
+    blue: '📊',
+    green: '✅',
+    yellow: '⏰',
+    red: '❤️',
+    purple: '👥',
   };
-  return icons[type] || '\uD83D\uDCCB';
+  return icons[type] || '📋';
 }

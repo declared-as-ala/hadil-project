@@ -53,10 +53,12 @@ export default function EmployesPage() {
   const filtered = data.filter((e) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    const nom = (e.utilisateur?.nom || '').toLowerCase();
-    const prenom = (e.utilisateur?.prenom || '').toLowerCase();
-    const email = (e.utilisateur?.email || '').toLowerCase();
-    return nom.includes(q) || prenom.includes(q) || email.includes(q) || (e.poste || '').toLowerCase().includes(q);
+    const u = e.utilisateur || {};
+    const nom = (u.nom || '').toLowerCase();
+    const prenom = (u.prenom || '').toLowerCase();
+    const fullName = (u.fullName || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    return nom.includes(q) || prenom.includes(q) || fullName.includes(q) || email.includes(q) || (e.poste || '').toLowerCase().includes(q);
   });
 
   if (loading) return <div className="crud-loading"><div className="spinner" /></div>;
@@ -103,7 +105,7 @@ export default function EmployesPage() {
 
         {filtered.length === 0 ? (
           <EmptyState
-            icon="\uD83D\uDC65"
+            icon="👥"
             title={search ? 'No results found' : 'No employees yet'}
             description={search ? 'Try adjusting your search.' : 'Add your first employee to get started.'}
             action={
@@ -158,11 +160,11 @@ export default function EmployesPage() {
                       <td>
                         <div className="table-actions">
                           <Link to={`/employes/${emp.id}`} className="btn-icon" title="View">
-                            \uD83D\uDC41\uFE0F
+                            👁️
                           </Link>
                           <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
                             <Link to={`/employes/${emp.id}/edit`} className="btn-icon" title="Edit">
-                              \u270F\uFE0F
+                              ✏️
                             </Link>
                             <RoleGuard roles={[ROLES.ADMIN]}>
                               <button
@@ -170,7 +172,7 @@ export default function EmployesPage() {
                                 title="Delete"
                                 onClick={() => setDeleteTarget(emp.id)}
                               >
-                                \uD83D\uDDD1\uFE0F
+                                🗑️
                               </button>
                             </RoleGuard>
                           </RoleGuard>

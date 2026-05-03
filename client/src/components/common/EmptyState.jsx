@@ -1,6 +1,6 @@
 import './EmptyState.css';
 
-export default function EmptyState({ icon = '\uD83D\uDCCB', title, description, action }) {
+export default function EmptyState({ icon = '📋', title, description, action }) {
   return (
     <div className="empty-state">
       <div className="empty-state-icon">{icon}</div>

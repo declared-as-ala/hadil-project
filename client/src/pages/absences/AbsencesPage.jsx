@@ -109,7 +109,7 @@ export default function AbsencesPage() {
         </div>
 
         {filtered.length === 0 ? (
-          <EmptyState icon="\uD83D\uDCC5" title="No absences recorded" description="All employees are present!" />
+          <EmptyState icon="📅" title="No absences recorded" description="All employees are present!" />
         ) : (
           <div className="table-wrapper">
             <table>
@@ -145,7 +145,7 @@ export default function AbsencesPage() {
                         <div className="table-actions">
                           <RoleGuard roles={[ROLES.ADMIN]}>
                             <button className="btn-icon danger" onClick={() => setDeleteTarget(a.id)}>
-                              \uD83D\uDDD1\uFE0F
+                              🗑️
                             </button>
                           </RoleGuard>
                         </div>

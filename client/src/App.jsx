@@ -25,6 +25,8 @@ import TachesPage from './pages/taches/TachesPage';
 import ReunionsPage from './pages/reunions/ReunionsPage';
 import ContratsPage from './pages/contrats/ContratsPage';
 import AdminPage from './pages/admin/AdminPage';
+import DocumentsAdminPage from './pages/documentsAdmin/DocumentsAdminPage';
+import ProfilePage from './pages/profile/Profile';
 import UnauthorizedPage from './pages/errors/UnauthorizedPage';
 
 // Styles
@@ -218,6 +220,28 @@ export default function App() {
                 <LayoutPage>
                   <RequireAuth roles={[ROLES.ADMIN, ROLES.RH]}>
                     <ContratsPage />
+                  </RequireAuth>
+                </LayoutPage>
+              }
+            />
+
+            {/* Profile */}
+            <Route
+              path="/profile"
+              element={
+                <LayoutPage>
+                  <ProfilePage />
+                </LayoutPage>
+              }
+            />
+
+            {/* Documents Administratifs */}
+            <Route
+              path="/documents-admin"
+              element={
+                <LayoutPage>
+                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE]}>
+                    <DocumentsAdminPage />
                   </RequireAuth>
                 </LayoutPage>
               }

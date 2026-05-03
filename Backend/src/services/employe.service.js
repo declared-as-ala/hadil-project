@@ -46,6 +46,10 @@ class EmployeService {
   }
 
   async updateEmploye(id, data) {
+    if (data.utilisateurId) {
+      data.utilisateur = data.utilisateurId;
+      delete data.utilisateurId;
+    }
     const employe = await Employe.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,

@@ -1,11 +1,18 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User.model');
+const Employe = require('../models/Employe.model');
 const ApiError = require('../utils/ApiError');
 const tokenService = require('./token.service');
 
 const SALT_ROUNDS = 10;
 
-const buildPublicUser = (user) => user.toJSON();
+const buildPublicUser = async (user) => {
+  const userData = user.toJSON();
+  // Get associated employee record if it exists
+  const employe = await Employe.findOne({ utilisateur: user._id });
+  userData.employeeId = employe ? employe._id : null;
+  return userData;
+};
 
 const registerUser = async ({ fullName, email, password }) => {
   const existing = await User.findOne({ email: email.toLowerCase() });
@@ -25,7 +32,7 @@ const registerUser = async ({ fullName, email, password }) => {
   const accessToken = tokenService.generateAccessToken(user);
 
   return {
-    user: buildPublicUser(user),
+    user: await buildPublicUser(user),
     accessToken,
   };
 };
@@ -48,7 +55,7 @@ const loginUser = async ({ email, password }) => {
   const accessToken = tokenService.generateAccessToken(user);
 
   return {
-    user: buildPublicUser(user),
+    user: await buildPublicUser(user),
     accessToken,
   };
 };

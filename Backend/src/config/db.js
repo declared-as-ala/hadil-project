@@ -5,12 +5,17 @@ mongoose.set('strictQuery', true);
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(config.mongoUri);
+    console.log('🔄 Attempting to connect to MongoDB...');
+    console.log('MongoDB URI (masked):', config.mongoUri.substring(0, 30) + '***');
+    
+    const result = await mongoose.connect(config.mongoUri);
+    
     // eslint-disable-next-line no-console
     console.log('✅ MongoDB connected');
+    return result;
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('❌ MongoDB connection error:', error);
+    console.error('❌ MongoDB connection error:', error.message);
     throw error;
   }
 };

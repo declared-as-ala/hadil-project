@@ -8,7 +8,7 @@ const menuItems = [
   {
     label: 'Dashboard',
     path: '/dashboard',
-    icon: '\uD83D\uDCCA',
+    icon: '📊',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },
   {
@@ -18,19 +18,19 @@ const menuItems = [
   {
     label: 'Employees',
     path: '/employes',
-    icon: '\uD83D\uDC65',
+    icon: '👥',
     roles: [ROLES.ADMIN, ROLES.RH],
   },
   {
     label: 'Interns',
     path: '/stagiaires',
-    icon: '\uD83C\uDF93',
+    icon: '🎓',
     roles: [ROLES.ADMIN, ROLES.RH],
   },
   {
     label: 'Contracts',
     path: '/contrats',
-    icon: '\uD83D\uDCC4',
+    icon: '📄',
     roles: [ROLES.ADMIN, ROLES.RH],
   },
   {
@@ -40,19 +40,19 @@ const menuItems = [
   {
     label: 'Absences',
     path: '/absences',
-    icon: '\uD83D\uDDD3\uFE0F',
+    icon: '📓',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
   {
     label: 'Leave Requests',
     path: '/conges',
-    icon: '\uD83C\uDFD6\uFE0F',
+    icon: '🏖️',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
   {
     label: 'Overtime',
     path: '/heures-sup',
-    icon: '\u23F0',
+    icon: '⏰',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
   {
@@ -60,15 +60,21 @@ const menuItems = [
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },
   {
-    label: 'Requests',
+    label: 'Demandes Docs',
+    path: '/documents-admin',
+    icon: '📂',
+    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
+  },
+  {
+    label: 'Réclamations',
     path: '/demandes',
-    icon: '\uD83D\uDCE9',
+    icon: '📩',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },
   {
     label: 'Messages',
     path: '/messages',
-    icon: '\uD83D\uDCAC',
+    icon: '💬',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },
   {
@@ -78,19 +84,19 @@ const menuItems = [
   {
     label: 'Projects',
     path: '/projets',
-    icon: '\uD83D\uDE80',
+    icon: '🚀',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
   {
     label: 'Tasks',
     path: '/taches',
-    icon: '\u2705',
+    icon: '✅',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
   {
     label: 'Meetings',
     path: '/reunions',
-    icon: '\uD83E\uDDD1\u200D\uD83E\uDDD1\u200D\uD83E\uDDD1',
+    icon: '👨‍👨‍👨',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
   {
@@ -100,8 +106,18 @@ const menuItems = [
   {
     label: 'Admin Panel',
     path: '/admin',
-    icon: '\u2699\uFE0F',
+    icon: '⚙️',
     roles: [ROLES.ADMIN],
+  },
+  {
+    section: 'Account',
+    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
+  },
+  {
+    label: 'My Profile',
+    path: '/profile',
+    icon: '👤',
+    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },
 ];
 
@@ -122,7 +138,7 @@ export default function Sidebar() {
     <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <span className="sidebar-logo-icon">\uD83C\uFE0F</span>
+          <span className="sidebar-logo-icon">🏢</span>
           {!collapsed && <span className="sidebar-logo-text">HR System</span>}
         </div>
         <button

@@ -7,6 +7,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    avatar: {
+      type: String,
+    },
+    matricule: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
     nom: {
       type: String,
       trim: true,
@@ -33,8 +42,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'admin', 'rh', 'employe', 'stagiaire'],
-      default: 'user',
+      enum: [ 'admin', 'rh', 'employe', 'stagiaire'],
+      default: 'employe',
     },
   },
   {

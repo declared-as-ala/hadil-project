@@ -111,7 +111,7 @@ export default function StagiairesPage() {
         </div>
 
         {filtered.length === 0 ? (
-          <EmptyState icon="\uD83C\uDF93" title="No interns yet" description="Add your first intern." />
+          <EmptyState icon="🎓" title="No interns yet" description="Add your first intern." />
         ) : (
           <div className="table-wrapper">
             <table>
@@ -160,7 +160,7 @@ export default function StagiairesPage() {
                             title="Assign Encadrant"
                             onClick={() => { setEncadrantModal(s.id); setSelectedEncadrant(s.encadrant?.id || ''); }}
                           >
-                            \uD83D\uDC64
+                            👤
                           </button>
                           <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
                             <button
@@ -168,7 +168,7 @@ export default function StagiairesPage() {
                               title="Delete"
                               onClick={() => setDeleteTarget(s.id)}
                             >
-                              \uD83D\uDDD1\uFE0F
+                              🗑️
                             </button>
                           </RoleGuard>
                         </div>

@@ -570,6 +570,198 @@ Renew a contract. For CDD, this extends the end date.
 
 ---
 
+## 13. Users (NEW - Role Management)
+
+**Role Management API - Admin Only** ✨
+
+### Important: Automatic Role Assignment
+- When a user signs up via `/api/auth/signup`, the role is **automatically set to `employe`**
+- Only admins can change user roles via the API below
+
+### GET /api/users
+**Role:** Admin only
+
+Get all users in the system.
+
+```
+GET /api/users
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "64f5a1b2c3d4e5f6a7b8c9d0",
+        "fullName": "Admin User",
+        "email": "admin@example.com",
+        "role": "admin",
+        "createdAt": "2024-04-27T10:00:00Z"
+      },
+      {
+        "id": "64f5a1b2c3d4e5f6a7b8c9d1",
+        "fullName": "RH User",
+        "email": "rh@example.com",
+        "role": "rh",
+        "createdAt": "2024-04-27T10:05:00Z"
+      }
+    ],
+    "count": 2
+  }
+}
+```
+
+---
+
+### GET /api/users/:id
+**Role:** Admin only
+
+Get a specific user's information.
+
+```
+GET /api/users/64f5a1b2c3d4e5f6a7b8c9d0
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "64f5a1b2c3d4e5f6a7b8c9d0",
+      "fullName": "Admin User",
+      "email": "admin@example.com",
+      "role": "admin",
+      "createdAt": "2024-04-27T10:00:00Z"
+    }
+  }
+}
+```
+
+---
+
+### PUT /api/users/:id/role ⭐
+**Role:** Admin only
+
+**Change a user's role (admin, rh, employe, stagiaire)**
+
+```
+PUT /api/users/64f5a1b2c3d4e5f6a7b8c9d0/role
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "role": "rh"
+}
+```
+
+**Valid roles:**
+- `admin` - Full system access
+- `rh` - HR management access
+- `employe` - Employee access
+- `stagiaire` - Intern access
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "User role updated to rh",
+  "data": {
+    "user": {
+      "id": "64f5a1b2c3d4e5f6a7b8c9d0",
+      "fullName": "Admin User",
+      "email": "admin@example.com",
+      "role": "rh",
+      "createdAt": "2024-04-27T10:00:00Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+❌ `400 Bad Request` - Invalid role
+```json
+{
+  "success": false,
+  "message": "Validation error",
+  "errors": [
+    {
+      "path": ["body", "role"],
+      "message": "Role must be one of: admin, rh, employe, stagiaire"
+    }
+  ]
+}
+```
+
+❌ `403 Forbidden` - Cannot change own role
+```json
+{
+  "success": false,
+  "message": "You cannot change your own role"
+}
+```
+
+❌ `403 Forbidden` - Not admin
+```json
+{
+  "success": false,
+  "message": "You do not have permission to perform this action"
+}
+```
+
+❌ `404 Not Found` - User doesn't exist
+```json
+{
+  "success": false,
+  "message": "User not found"
+}
+```
+
+---
+
+### DELETE /api/users/:id
+**Role:** Admin only
+
+Delete a user from the system.
+
+```
+DELETE /api/users/64f5a1b2c3d4e5f6a7b8c9d1
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "User deleted successfully"
+}
+```
+
+**Error Responses:**
+
+❌ `403 Forbidden` - Cannot delete own account
+```json
+{
+  "success": false,
+  "message": "You cannot delete your own account"
+}
+```
+
+❌ `404 Not Found` - User doesn't exist
+```json
+{
+  "success": false,
+  "message": "User not found"
+}
+```
+
+---
+
 ## Quick Start / Testing Flow
 
 ### 1. Seed the database
@@ -594,6 +786,14 @@ curl http://localhost:5000/api/employes \
 
 ### 4. Test role-based access
 Try accessing admin-only endpoints with an employe token - you'll get a 403 Forbidden error.
+
+### 5. Change a user's role (Admin only)
+```bash
+curl -X PUT http://localhost:5000/api/users/<user_id>/role \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"role": "rh"}'
+```
 
 ---
 

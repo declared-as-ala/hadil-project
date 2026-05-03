@@ -4,8 +4,10 @@ const ApiError = require('../utils/ApiError');
 class MessageService {
   async getAllMessages(filters = {}) {
     const query = {};
-    if (filters.expediteurId) query.expediteur = filters.expediteurId;
-    if (filters.destinataireId) query.destinataire = filters.destinataireId;
+    // Guard: skip if value is missing or the literal string "null"/"undefined"
+    const isValidId = (v) => v && v !== 'null' && v !== 'undefined';
+    if (isValidId(filters.expediteurId)) query.expediteur = filters.expediteurId;
+    if (isValidId(filters.destinataireId)) query.destinataire = filters.destinataireId;
     if (filters.lu !== undefined) query.lu = filters.lu;
 
     const messages = await Message.find(query)
@@ -36,6 +38,15 @@ class MessageService {
   }
 
   async createMessage(data) {
+    // Validate that expediteur and destinataire are not empty
+    // Use String() coercion so ObjectId values work as well as plain strings
+    if (!data.expediteurId || !String(data.expediteurId).trim()) {
+      throw new ApiError(400, 'Sender ID is required');
+    }
+    if (!data.destinataireId || !String(data.destinataireId).trim()) {
+      throw new ApiError(400, 'Recipient ID is required');
+    }
+
     const message = new Message({
       expediteur: data.expediteurId,
       destinataire: data.destinataireId,

@@ -2,6 +2,7 @@ const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const tokenService = require('../services/token.service');
 const User = require('../models/User.model');
+const Employe = require('../models/Employe.model');
 
 const extractTokenFromHeader = (req) => {
   const authHeader = req.headers.authorization || '';
@@ -26,7 +27,13 @@ const protect = asyncHandler(async (req, res, next) => {
       throw new ApiError(401, 'User no longer exists');
     }
 
-    req.user = user.toJSON();
+    const userData = user.toJSON();
+    
+    // Get associated employee record if it exists
+    const employe = await Employe.findOne({ utilisateur: user._id });
+    userData.employeeId = employe ? employe._id : null;
+
+    req.user = userData;
 
     return next();
   } catch (err) {
