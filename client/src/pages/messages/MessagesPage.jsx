@@ -84,8 +84,8 @@ export default function MessagesPage() {
   }
 
   function getOtherParty(msg) {
-    if (view === 'inbox') return msg.expediteur?.utilisateur || {};
-    return msg.destinataire?.utilisateur || {};
+    if (view === 'inbox') return msg.expediteur || {};
+    return msg.destinataire || {};
   }
 
   if (loading) return <div className="crud-loading"><div className="spinner" /></div>;
@@ -160,7 +160,7 @@ export default function MessagesPage() {
               <option value="">Select recipient...</option>
               {employes.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.utilisateur?.nom} {e.utilisateur?.prenom}
+                  {e.nom} {e.prenom}
                 </option>
               ))}
             </select>
@@ -179,7 +179,7 @@ export default function MessagesPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div>
                 <strong>{view === 'inbox' ? 'From: ' : 'To: '}</strong>
-                {selectedMessage.expediteur?.utilisateur?.nom} {selectedMessage.expediteur?.utilisateur?.prenom}
+                {selectedMessage.expediteur?.nom} {selectedMessage.expediteur?.prenom}
               </div>
               <span style={{ color: 'var(--gray-400)', fontSize: 'var(--text-sm)' }}>
                 {formatDate(selectedMessage.date || selectedMessage.createdAt)}

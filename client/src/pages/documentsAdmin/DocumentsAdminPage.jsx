@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { documentsAdminAPI } from '../../api/documentsAdmin.api';
+import { paieAPI } from '../../api/paie.api';
 import { useApiToast } from '../../components/common/Toast';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
@@ -11,55 +12,71 @@ import './DocumentsAdminPage.css';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const TYPE_LABELS = {
-  attestation_travail:  'Attestation de travail',
-  attestation_salaire:  'Attestation de salaire',
-  fiche_paie:           'Fiche de paie',
-  certificat_travail:   'Certificat de travail',
+  attestation_travail: 'Attestation de travail',
+  attestation_salaire: 'Attestation de salaire',
+  fiche_paie: 'Fiche de paie',
+  certificat_travail: 'Certificat de travail',
 };
 
 const TYPE_ICONS = {
-  attestation_travail:  '📋',
-  attestation_salaire:  '💰',
-  fiche_paie:           '💵',
-  certificat_travail:   '🎓',
+  attestation_travail: '📋',
+  attestation_salaire: '💰',
+  fiche_paie: '💵',
+  certificat_travail: '🎓',
 };
 
 const STATUS_LABELS = {
   en_attente: 'En attente',
-  acceptee:   'Acceptée',
-  refusee:    'Refusée',
+  acceptee: 'Acceptée',
+  refusee: 'Refusée',
 };
 
 const STATUS_VARIANT = {
   en_attente: 'warning',
-  acceptee:   'success',
-  refusee:    'danger',
+  acceptee: 'success',
+  refusee: 'danger',
 };
 
 const TABS = [
-  { key: '',           label: 'Toutes' },
+  { key: '', label: 'Toutes' },
   { key: 'en_attente', label: 'En attente' },
-  { key: 'acceptee',   label: 'Acceptées' },
-  { key: 'refusee',    label: 'Refusées' },
+  { key: 'acceptee', label: 'Acceptées' },
+  { key: 'refusee', label: 'Refusées' },
 ];
 
 const EMPTY_FORM = { typeDocument: 'attestation_travail', description: '' };
 
 // ── Document preview content ───────────────────────────────────────────────────
 
-function buildDocumentContent(demande) {
-  const employeNom = `${demande.employe?.utilisateur?.prenom || ''} ${demande.employe?.utilisateur?.nom || ''}`.trim();
-  const poste = demande.employe?.poste || '—';
-  const dept  = demande.employe?.departement || '—';
-  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-  const type  = TYPE_LABELS[demande.typeDocument] || demande.typeDocument;
+const formatDT = (amount) => {
+  if (amount == null) return '—';
+  return `${Number(amount).toFixed(2)} DT`;
+};
 
-  return { employeNom, poste, dept, today, type };
+const MOIS_LABELS = [
+  '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+];
+
+function buildDocumentContent(demande) {
+  const emp = demande.employe || {};
+  const usr = emp.utilisateur || {};
+  const prenom = emp.prenom || usr.prenom || '';
+  const nom = emp.nom || usr.nom || '';
+  const employeNom = `${prenom} ${nom}`.trim() || '—';
+
+  const poste = emp.poste || '—';
+  const dateEmbauche = emp.dateEmbauche ? new Date(emp.dateEmbauche).toLocaleDateString('fr-FR') : '—';
+  const salaireBase = emp.salaire_base || 0;
+  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const type = TYPE_LABELS[demande.typeDocument] || demande.typeDocument;
+
+  return { employeNom, poste, today, type, dateEmbauche, salaireBase };
 }
 
 // ── Sub-component: Employee request card ──────────────────────────────────────
 
-function EmployeeCard({ demande, onDownload }) {
+function EmployeeCard({ demande, onDownload, onDelete }) {
   return (
     <div className="doc-card" data-status={demande.status}>
       <div className="doc-card-header">
@@ -85,21 +102,32 @@ function EmployeeCard({ demande, onDownload }) {
         </div>
       )}
 
-      {demande.status === 'acceptee' && (
-        <div className="doc-card-actions">
+      <div className="doc-card-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+        {demande.status === 'acceptee' && (
           <button className="btn-download" onClick={() => onDownload(demande)}>
             ⬇ Télécharger
           </button>
-        </div>
-      )}
+        )}
+        <button
+          className="btn btn-sm btn-outline"
+          onClick={() => {
+            if (window.confirm('Voulez-vous vraiment supprimer cette demande ?')) {
+              onDelete(demande.id);
+            }
+          }}
+          style={{ color: '#ef4444', borderColor: '#ef4444' }}
+        >
+          🗑️ Supprimer
+        </button>
+      </div>
     </div>
   );
 }
 
 // ── Sub-component: Admin request card ─────────────────────────────────────────
 
-function AdminCard({ demande, onUpdateStatus }) {
-  const [open, setOpen]       = useState(false);
+function AdminCard({ demande, onUpdateStatus, onDelete }) {
+  const [open, setOpen] = useState(false);
   const [comment, setComment] = useState(demande.commentaireAdmin || '');
   const [loading, setLoading] = useState(false);
 
@@ -110,7 +138,10 @@ function AdminCard({ demande, onUpdateStatus }) {
     setOpen(false);
   }
 
-  const emp = demande.employe?.utilisateur;
+  const emp = demande.employe || {};
+  const usr = emp.utilisateur || {};
+  const prenom = emp.prenom || usr.prenom || '';
+  const nom = emp.nom || usr.nom || '';
 
   return (
     <div className="doc-card" data-status={demande.status}>
@@ -124,9 +155,9 @@ function AdminCard({ demande, onUpdateStatus }) {
 
       <div className="doc-card-employee">
         <div className="avatar avatar-sm">
-          {(emp?.nom?.[0] || '?').toUpperCase()}
+          {(nom[0] || prenom[0] || '?').toUpperCase()}
         </div>
-        <span>{emp?.prenom} {emp?.nom}</span>
+        <span>{prenom} {nom}</span>
       </div>
 
       {demande.description && (
@@ -144,16 +175,27 @@ function AdminCard({ demande, onUpdateStatus }) {
         </div>
       )}
 
-      {demande.status === 'en_attente' && (
-        <div className="doc-card-actions">
+      <div className="doc-card-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+        {demande.status === 'en_attente' && (
           <button
             className="btn btn-sm btn-outline"
             onClick={() => setOpen((v) => !v)}
           >
             {open ? 'Annuler' : '✏️ Décider'}
           </button>
-        </div>
-      )}
+        )}
+        <button
+          className="btn btn-sm btn-outline"
+          onClick={() => {
+            if (window.confirm('Voulez-vous vraiment supprimer cette demande ?')) {
+              onDelete(demande.id);
+            }
+          }}
+          style={{ color: '#ef4444', borderColor: '#ef4444' }}
+        >
+          🗑️ Supprimer
+        </button>
+      </div>
 
       {open && (
         <div className="doc-decision-panel">
@@ -192,16 +234,16 @@ function AdminCard({ demande, onUpdateStatus }) {
 
 export default function DocumentsAdminPage() {
   const { role } = useContext(AuthContext);
-  const toast    = useApiToast();
-  const isAdmin  = role === ROLES.ADMIN || role === ROLES.RH;
+  const toast = useApiToast();
+  const isAdmin = role === ROLES.ADMIN || role === ROLES.RH;
 
-  const [demandes,    setDemandes]    = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [statusTab,   setStatusTab]   = useState('');
-  const [showForm,    setShowForm]    = useState(false);
-  const [form,        setForm]        = useState(EMPTY_FORM);
+  const [demandes, setDemandes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusTab, setStatusTab] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [formLoading, setFormLoading] = useState(false);
-  const [printItem,   setPrintItem]   = useState(null);
+  const [printItem, setPrintItem] = useState(null);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -219,7 +261,7 @@ export default function DocumentsAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, statusTab]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAdmin, statusTab]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -257,6 +299,21 @@ export default function DocumentsAdminPage() {
     setPrintItem(demande);
   }
 
+  // ── Admin / Employee: Delete request ───────────────────────────────────────
+  async function handleDelete(id) {
+    try {
+      if (isAdmin) {
+        await documentsAdminAPI.delete(id);
+      } else {
+        await documentsAdminAPI.deleteMaDemande(id);
+      }
+      toast.success('Demande supprimée', 'La demande a été supprimée de l\'historique.');
+      loadData();
+    } catch (err) {
+      toast.error(err);
+    }
+  }
+
   // ── Tab counts (admin only) ────────────────────────────────────────────────
   function tabCount(key) {
     if (!key) return demandes.length;
@@ -271,38 +328,182 @@ export default function DocumentsAdminPage() {
   // ── Print modal content ────────────────────────────────────────────────────
   function PrintModal() {
     if (!printItem) return null;
-    const { employeNom, poste, dept, today, type } = buildDocumentContent(printItem);
+    const isFichePaie = printItem.typeDocument === 'fiche_paie';
+    const [paieData, setPaieData] = useState(null);
+    const [paieLoading, setPaieLoading] = useState(false);
+
+    useEffect(() => {
+      if (!isFichePaie || !printItem.employe) return;
+      setPaieLoading(true);
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      paieAPI.getDocument({
+        employeId: printItem.employe.id || printItem.employe._id,
+        mois: currentMonth,
+        annee: currentYear,
+      })
+        .then((res) => setPaieData(res.data))
+        .catch(() => setPaieData(null))
+        .finally(() => setPaieLoading(false));
+    }, [printItem, isFichePaie]);
+
+    const { employeNom, poste, today, type, dateEmbauche, salaireBase } = buildDocumentContent(printItem);
+
+    const periodeLabel = isFichePaie && paieData
+      ? `${MOIS_LABELS[paieData.mois] || ''} ${paieData.annee || ''}`
+      : '';
+
+    function getDocumentHtml() {
+      let contentHtml = '';
+
+      if (printItem.typeDocument === 'fiche_paie') {
+        const pData = paieData || { salaire_base: salaireBase, total_heures_sup: 0, montant_heures_sup: 0, salaire_total: salaireBase, prix_heure_sup: 0 };
+        contentHtml = `
+          <div class="header-section">
+            <div class="company-info">
+              <h2>SOCIÉTÉ</h2>
+              <p>Tunis, Tunisie</p>
+            </div>
+            <div class="doc-title-box">
+              <h1>FICHE DE PAIE</h1>
+              <p>Période : ${periodeLabel}</p>
+            </div>
+          </div>
+          <div class="employee-info">
+            <p><strong>Nom et prénom :</strong> ${employeNom}</p>
+            <p><strong>Poste :</strong> ${poste}</p>
+            <p><strong>Date d'embauche :</strong> ${dateEmbauche}</p>
+          </div>
+          <table class="paie-table">
+            <thead>
+              <tr>
+                <th>Désignation</th>
+                <th>Nombre / Base</th>
+                <th>Taux</th>
+                <th>Montant (DT)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Salaire de base</td>
+                <td>1 mois</td>
+                <td>-</td>
+                <td>${formatDT(pData.salaire_base)}</td>
+              </tr>
+              <tr>
+                <td>Heures supplémentaires</td>
+                <td>${pData.total_heures_sup || 0} h</td>
+                <td>${formatDT(pData.prix_heure_sup)}</td>
+                <td>${formatDT(pData.montant_heures_sup)}</td>
+              </tr>
+              <tr class="total-row">
+                <td colspan="3">Salaire Brut Total</td>
+                <td>${formatDT(pData.salaire_total)}</td>
+              </tr>
+              <tr class="net-row">
+                <td colspan="3"><strong>NET À PAYER</strong></td>
+                <td><strong>${formatDT(pData.salaire_total)}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="mention">Pour vous aider à faire valoir vos droits, conservez ce bulletin de paie sans limitation de durée.</p>
+        `;
+      } else if (printItem.typeDocument === 'attestation_salaire') {
+        contentHtml = `
+          <div class="doc-title-box centered">
+            <h1>ATTESTATION DE SALAIRE</h1>
+          </div>
+          <div class="attestation-body">
+            <p>Nous soussignés, la direction de la société, attestons par la présente que :</p>
+            <p class="highlight-name">Monsieur / Madame <strong>${employeNom}</strong></p>
+            <p>Travaillant au sein de notre société en qualité de <strong>${poste}</strong>,</p>
+            <p>Perçoit actuellement une rémunération mensuelle de base de :</p>
+            <p class="salary-box"><strong>${formatDT(salaireBase)}</strong></p>
+            <p>Cette attestation est délivrée à l'intéressé(e) sur sa demande pour servir et valoir ce que de droit.</p>
+          </div>
+        `;
+      } else if (printItem.typeDocument === 'attestation_travail') {
+        contentHtml = `
+          <div class="doc-title-box centered">
+            <h1>ATTESTATION DE TRAVAIL</h1>
+          </div>
+          <div class="attestation-body">
+            <p>Nous soussignés, la direction des ressources humaines de la société, attestons par la présente que :</p>
+            <p class="highlight-name">Monsieur / Madame <strong>${employeNom}</strong></p>
+            <p>Est régulièrement employé(e) au sein de notre entreprise depuis le <strong>${dateEmbauche}</strong>.</p>
+            <p>Il/Elle occupe actuellement le poste de <strong>${poste}</strong>.</p>
+            <p>Cette attestation est délivrée à la demande de l'intéressé(e) pour servir et valoir ce que de droit.</p>
+          </div>
+        `;
+      } else if (printItem.typeDocument === 'certificat_travail') {
+        contentHtml = `
+          <div class="doc-title-box centered">
+            <h1>CERTIFICAT DE TRAVAIL</h1>
+          </div>
+          <div class="attestation-body">
+            <p>Nous soussignés, certifions par la présente que :</p>
+            <p class="highlight-name">Monsieur / Madame <strong>${employeNom}</strong></p>
+            <p>A été employé(e) dans notre société du <strong>${dateEmbauche}</strong> à ce jour.</p>
+            <p>En qualité de <strong>${poste}</strong>.</p>
+            <p>Il/Elle nous quitte libre de tout engagement envers notre société.</p>
+            <p>Ce certificat est délivré à l'intéressé(e) pour faire valoir ce que de droit.</p>
+          </div>
+        `;
+      } else {
+        contentHtml = `<div class="doc-title-box centered"><h1>${type}</h1></div><p>Document non défini.</p>`;
+      }
+
+      return contentHtml;
+    }
 
     function doPrint() {
       const w = window.open('', '_blank');
       w.document.write(`
         <html><head><title>${type}</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 60px; color: #1f2937; }
-          h1 { color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 12px; }
-          table { border-collapse: collapse; width: 100%; margin: 24px 0; }
-          td { padding: 8px 12px; border: 1px solid #e5e7eb; }
-          td:first-child { font-weight: 600; width: 40%; background: #f9fafb; }
-          .footer { margin-top: 60px; display: flex; justify-content: space-between; font-size: 12px; color: #6b7280; }
-          .signature { text-align: right; margin-top: 80px; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px 60px; color: #1f2937; line-height: 1.6; }
+          .header-section { display: flex; justify-content: space-between; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; }
+          .company-info h2 { margin: 0; color: #111827; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
+          .company-info p { margin: 2px 0; color: #6b7280; font-size: 14px; }
+          .doc-title-box { text-align: right; }
+          .doc-title-box.centered { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 40px; margin-top: 20px; }
+          .doc-title-box h1 { margin: 0; color: #4f46e5; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
+          .doc-title-box p { margin: 5px 0 0; font-weight: 600; color: #374151; }
+          
+          .employee-info { margin-bottom: 30px; background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; }
+          .employee-info p { margin: 5px 0; font-size: 14px; }
+          
+          .paie-table { border-collapse: collapse; width: 100%; margin: 20px 0; font-size: 14px; }
+          .paie-table th { background: #4f46e5; color: white; padding: 10px; text-align: left; }
+          .paie-table td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+          .paie-table .total-row td { font-weight: bold; background: #f3f4f6; border-top: 2px solid #d1d5db; }
+          .paie-table .net-row td { font-weight: bold; background: #ecfdf5; color: #059669; font-size: 16px; border-top: 2px solid #059669; }
+          .mention { font-size: 12px; color: #6b7280; margin-top: 30px; font-style: italic; }
+          
+          .attestation-body { font-size: 16px; margin: 40px 0; line-height: 1.8; text-align: justify; }
+          .attestation-body .highlight-name { font-size: 20px; text-align: center; margin: 30px 0; color: #111827; }
+          .attestation-body .salary-box { text-align: center; font-size: 24px; color: #4f46e5; margin: 20px 0; padding: 15px; background: #f5f3ff; border-radius: 8px; border: 1px dashed #4f46e5; }
+          
+          .signature-section { margin-top: 80px; display: flex; justify-content: flex-end; }
+          .signature-box { text-align: center; width: 250px; }
+          .signature-box .date { margin-bottom: 20px; font-style: italic; }
+          .signature-box .cachet { height: 100px; border-bottom: 1px solid #000; margin-top: 10px; }
         </style>
         </head><body>
-        <h1>${type}</h1>
-        <p>L'entreprise certifie que :</p>
-        <table>
-          <tr><td>Nom et prénom</td><td>${employeNom}</td></tr>
-          <tr><td>Poste occupé</td><td>${poste}</td></tr>
-          <tr><td>Département</td><td>${dept}</td></tr>
-          <tr><td>Type de document</td><td>${type}</td></tr>
-          <tr><td>Date de délivrance</td><td>${today}</td></tr>
-        </table>
-        <p>Ce document est délivré à l'intéressé(e) pour servir et valoir ce que de droit.</p>
-        <div class="signature">
-          <p>Fait le ${today}</p>
-          <br/><br/>
-          <p>Signature &amp; Cachet</p>
-          <p>____________________</p>
-        </div>
+          
+          <div class="content-wrapper">
+            ${getDocumentHtml()}
+          </div>
+          
+          <div class="signature-section">
+            <div class="signature-box">
+              <p class="date">Fait à Tunis, le ${today}</p>
+              <p><strong>La Direction des Ressources Humaines</strong></p>
+              <p>Signature & Cachet</p>
+              <div class="cachet"></div>
+            </div>
+          </div>
+          
         </body></html>
       `);
       w.document.close();
@@ -322,28 +523,12 @@ export default function DocumentsAdminPage() {
           </>
         }
       >
-        <div className="doc-print-body">
-          <div className="doc-print-title">{type}</div>
-          <p>L'entreprise certifie que :</p>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
-            <tbody>
-              {[
-                ['Nom et prénom', employeNom],
-                ['Poste occupé', poste],
-                ['Département', dept],
-                ['Type de document', type],
-                ['Date de délivrance', today],
-              ].map(([k, v]) => (
-                <tr key={k}>
-                  <td style={{ padding: '6px 10px', border: '1px solid var(--border-color)', background: 'var(--gray-50)', fontWeight: 600, width: '40%' }}>{k}</td>
-                  <td style={{ padding: '6px 10px', border: '1px solid var(--border-color)' }}>{v}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p style={{ color: 'var(--gray-500)', fontSize: 'var(--text-sm)' }}>
-            Ce document est délivré à l'intéressé(e) pour servir et valoir ce que de droit.
-          </p>
+        <div className="doc-print-body" style={{ padding: '1rem', fontFamily: "'Segoe UI', Arial, sans-serif", color: '#1f2937' }}>
+          {paieLoading && isFichePaie ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement des données de paie...</div>
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: getDocumentHtml() }} />
+          )}
         </div>
       </Modal>
     );
@@ -449,7 +634,7 @@ export default function DocumentsAdminPage() {
           ) : (
             <div className="doc-cards-grid">
               {demandes.map((d) => (
-                <EmployeeCard key={d.id} demande={d} onDownload={handleDownload} />
+                <EmployeeCard key={d.id} demande={d} onDownload={handleDownload} onDelete={handleDelete} />
               ))}
             </div>
           )}
@@ -497,6 +682,7 @@ export default function DocumentsAdminPage() {
                   key={d.id}
                   demande={d}
                   onUpdateStatus={handleUpdateStatus}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>

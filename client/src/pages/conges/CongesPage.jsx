@@ -20,7 +20,7 @@ const LEAVE_TYPE_ICONS = {
 };
 
 const STATUS_CONFIG = {
-  pending:  { label: 'Pending',  className: 'badge-pending'  },
+  pending: { label: 'Pending', className: 'badge-pending' },
   approved: { label: 'Approved', className: 'badge-approved' },
   rejected: { label: 'Rejected', className: 'badge-rejected' },
 };
@@ -53,12 +53,12 @@ const EMPTY_FORM = {
 
 function EmployeeView() {
   const toast = useApiToast();
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [editForm, setEditForm] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [requests, setRequests] = useState([]); // Ma liste de congés
+  const [loading, setLoading] = useState(true);  // Pendant chargement
+  const [showForm, setShowForm] = useState(false); // Formulaire visible ?
+  const [form, setForm] = useState(EMPTY_FORM);// Données nouveau congé
+  const [editForm, setEditForm] = useState(null);// Données édition
+  const [submitting, setSubmitting] = useState(false);// Pendant envoi
 
   useEffect(() => { loadMyRequests(); }, []);
 
@@ -136,11 +136,11 @@ function EmployeeView() {
       {/* Header */}
       <div className="lr-header">
         <div className="lr-header-text">
-          <h1 className="lr-title">My Leave Requests</h1>
-          <p className="lr-subtitle">Track and manage your time-off requests.</p>
+          <h1 className="lr-title">Mes demandes de congés</h1>
+          <p className="lr-subtitle">Suivre et gérer vos demandes de congés.</p>
         </div>
         <button className="lr-btn lr-btn-primary" onClick={() => setShowForm(true)}>
-          <span>＋</span> Request Leave
+          <span>＋</span> Demande de congé
         </button>
       </div>
 
@@ -172,8 +172,8 @@ function EmployeeView() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {req.status === 'pending' && (
-                    <button 
-                      onClick={() => handleEditClick(req)} 
+                    <button
+                      onClick={() => handleEditClick(req)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
                       title="Edit Request"
                     >
@@ -250,7 +250,7 @@ function EmployeeView() {
                 onChange={handleChange}
                 min="1"
                 max="365"
-                placeholder="e.g. 5"
+                placeholder=""
                 required
               />
             </div>
@@ -371,6 +371,7 @@ function AdminView() {
 
   useEffect(() => { loadData(); }, [filterStatus, filterType, filterEmploye]);
 
+  //charger tout ce dont l’Admin/RH a besoin
   async function loadData() {
     setLoading(true);
     try {
@@ -445,8 +446,7 @@ function AdminView() {
 
   const filtered = requests.filter(r => {
     if (!search) return true;
-    const u = r.employe?.utilisateur;
-    const name = `${u?.nom || ''} ${u?.prenom || ''}`.toLowerCase();
+    const name = `${r.employe?.nom || ''} ${r.employe?.prenom || ''}`.toLowerCase();
     return name.includes(search.toLowerCase()) || (r.motif || '').toLowerCase().includes(search.toLowerCase());
   });
 
@@ -498,7 +498,7 @@ function AdminView() {
           <option value="">All Employees</option>
           {employes.map(e => (
             <option key={e.id} value={e.id}>
-              {e.utilisateur?.nom} {e.utilisateur?.prenom}
+              {e.nom} {e.prenom}
             </option>
           ))}
         </select>
@@ -538,8 +538,8 @@ function AdminView() {
               </thead>
               <tbody>
                 {filtered.map(req => {
-                  const user = req.employe?.utilisateur;
-                  const initials = `${user?.nom?.[0] || ''}${user?.prenom?.[0] || ''}`.toUpperCase() || '?';
+                  const emp = req.employe;
+                  const initials = `${emp?.nom?.[0] || ''}${emp?.prenom?.[0] || ''}`.toUpperCase() || '?';
                   const isPending = req.status === 'pending';
                   return (
                     <tr key={req.id}>
@@ -547,7 +547,7 @@ function AdminView() {
                         <div className="lr-employee-cell">
                           <div className="lr-avatar">{initials}</div>
                           <div>
-                            <div className="lr-employee-name">{user?.nom} {user?.prenom}</div>
+                            <div className="lr-employee-name">{emp?.nom} {emp?.prenom}</div>
                             <div className="lr-employee-dept">{req.employe?.departement || '—'}</div>
                           </div>
                         </div>
@@ -618,7 +618,7 @@ function AdminView() {
       <Modal
         isOpen={showCreateModal}
         onClose={() => { setShowCreateModal(false); }}
-        title="Create Leave Request"
+        title="Add Request"
         footer={
           <>
             <button className="lr-btn lr-btn-outline" onClick={() => setShowCreateModal(false)}>Cancel</button>
@@ -634,7 +634,7 @@ function AdminView() {
             <select name="employeId" className="lr-select" value={createForm.employeId} onChange={handleCreateChange} required>
               <option value="">Select employee…</option>
               {employes.map(e => (
-                <option key={e.id} value={e.id}>{e.utilisateur?.nom} {e.utilisateur?.prenom}</option>
+                <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>
               ))}
             </select>
           </div>

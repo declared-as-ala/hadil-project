@@ -15,6 +15,11 @@ import './Dashboard.css';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../utils/constants';
 
+// Pseudo-random smooth SVG path generator for the area chart
+const generateChartPath = () => {
+  return "M0,60 C20,20 40,80 60,40 C80,0 100,70 120,30 C140,-10 160,50 180,20 C200,-10 220,60 240,10 C260,-40 280,30 300,0";
+};
+
 export default function DashboardPage() {
   const { role } = useAuth();
   const toast = useApiToast();
@@ -89,12 +94,13 @@ export default function DashboardPage() {
   }
 
   const isAdminOrRH = role === ROLES.ADMIN || role === ROLES.RH;
+  const pathData = generateChartPath();
 
   if (loading) {
     return (
       <div className="dashboard-loading">
         <div className="spinner" />
-        <p>Loading dashboard...</p>
+        <p>Loading your workspace...</p>
       </div>
     );
   }
@@ -117,7 +123,7 @@ export default function DashboardPage() {
             <StatCard icon="green" label="Active Projects" value={stats.projets} />
             <StatCard icon="yellow" label="Active Contracts" value={stats.contrats} />
             <StatCard icon="red" label="Total Absences" value={stats.absences} />
-            <StatCard icon="blue" label="Leave Requests" value={stats.conges} />
+            <StatCard icon="purple" label="Leave Requests" value={stats.conges} />
           </>
         )}
         {(role === ROLES.EMPLOYE || role === ROLES.STAGIAIRE) && (
@@ -130,15 +136,15 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Quick Actions */}
+      {/* Sections */}
       <div className="dashboard-sections">
         <div className="dashboard-grid">
           {/* Pending Demandes */}
           {isAdminOrRH && recentDemandes.length > 0 && (
-            <div className="card dashboard-card">
+            <div className="dashboard-card">
               <div className="card-header">
                 <h3 className="card-title">Pending Requests</h3>
-                <Link to="/demandes" className="btn btn-ghost btn-sm">
+                <Link to="/demandes" className="btn btn-ghost btn-sm" style={{background: 'rgba(255,255,255,0.5)', borderRadius: '10px'}}>
                   View All
                 </Link>
               </div>
@@ -159,32 +165,52 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Recent Absences */}
-          {isAdminOrRH && recentAbsences.length > 0 && (
-            <div className="card dashboard-card">
+          {/* Recent Absences + Area Chart */}
+          {isAdminOrRH && (
+            <div className="dashboard-card">
               <div className="card-header">
-                <h3 className="card-title">Recent Absences</h3>
-                <Link to="/absences" className="btn btn-ghost btn-sm">
+                <h3 className="card-title">Absence Trends</h3>
+                <Link to="/absences" className="btn btn-ghost btn-sm" style={{background: 'rgba(255,255,255,0.5)', borderRadius: '10px'}}>
                   View All
                 </Link>
               </div>
-              <div className="dashboard-list">
-                {recentAbsences.slice(0, 5).map((a) => (
-                  <div key={a.id} className="dashboard-list-item">
-                    <div>
-                      <div className="dashboard-list-title">{a.raison || 'Absence recorded'}</div>
-                      <div className="dashboard-list-meta">
-                        {formatDate(a.date)} &middot; {a.nombre_des_heures}h
+              
+              <div className="mini-chart">
+                <svg viewBox="0 -10 300 100" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="chartGradientFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#a855f7" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+                    </linearGradient>
+                    <linearGradient id="chartGradientStroke" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#8b5cf6" />
+                      <stop offset="100%" stopColor="#3b82f6" />
+                    </linearGradient>
+                  </defs>
+                  <path d={`${pathData} L300,100 L0,100 Z`} className="chart-area" />
+                  <path d={pathData} className="chart-line" />
+                </svg>
+              </div>
+
+              {recentAbsences.length > 0 && (
+                <div className="dashboard-list">
+                  {recentAbsences.slice(0, 3).map((a) => (
+                    <div key={a.id} className="dashboard-list-item" style={{padding: '12px 24px'}}>
+                      <div>
+                        <div className="dashboard-list-title">{a.raison || 'Absence recorded'}</div>
+                        <div className="dashboard-list-meta">
+                          {formatDate(a.date)} &middot; {a.nombre_des_heures}h
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Quick Links */}
-          <div className="card dashboard-card">
+          {/* Quick Links Bento Box */}
+          <div className="dashboard-card" style={{ gridColumn: '1 / -1' }}>
             <div className="card-header">
               <h3 className="card-title">Quick Actions</h3>
             </div>

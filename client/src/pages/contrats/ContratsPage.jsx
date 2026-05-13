@@ -180,7 +180,7 @@ export default function ContratsPage() {
               <label className="form-label form-label-required">Employee</label>
               <select className="form-select" value={form.employeId} onChange={(e) => setForm({ ...form, employeId: e.target.value })} required>
                 <option value="">Select...</option>
-                {employes.map((e) => <option key={e.id} value={e.id}>{e.utilisateur?.nom} {e.utilisateur?.prenom}</option>)}
+                {employes.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
               </select>
             </div>
             <div className="form-group">

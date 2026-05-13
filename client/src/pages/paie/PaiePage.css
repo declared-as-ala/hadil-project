@@ -1,0 +1,489 @@
+/* ═══════════════════════════════════════════════════════════════════
+   PaiePage.css — Payroll Management Styles
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Hero Banner ──────────────────────────────────────────────────── */
+.paie-hero {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.paie-hero::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.paie-hero h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.paie-hero p {
+  opacity: 0.85;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.paie-hero-icon {
+  font-size: 3rem;
+  opacity: 0.9;
+}
+
+/* ── Tabs ──────────────────────────────────────────────────────────── */
+.paie-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.paie-tab {
+  padding: 0.5rem 1.25rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-color, #e5e7eb);
+  background: var(--card-bg, #fff);
+  color: var(--gray-500, #6b7280);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.paie-tab:hover {
+  border-color: #a78bfa;
+  color: #7c3aed;
+}
+
+.paie-tab.active {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+/* ── Action Bar ───────────────────────────────────────────────────── */
+.paie-action-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.paie-action-bar .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.paie-action-bar label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-500, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.paie-action-bar select,
+.paie-action-bar input {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-color, #e5e7eb);
+  font-size: 0.875rem;
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #1f2937);
+  min-width: 140px;
+}
+
+.paie-action-bar select:focus,
+.paie-action-bar input:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.btn-generate {
+  padding: 0.55rem 1.25rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-generate:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-generate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-generate-all {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.btn-generate-all:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* ── Stats Row ────────────────────────────────────────────────────── */
+.paie-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.paie-stat-card {
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+}
+
+.paie-stat-card:hover {
+  border-color: #a78bfa;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.08);
+}
+
+.paie-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.paie-stat-icon.purple {
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.paie-stat-icon.green {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.paie-stat-icon.blue {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.paie-stat-icon.orange {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.paie-stat-info h3 {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--gray-400, #9ca3af);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.paie-stat-info p {
+  margin: 0.25rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #1f2937);
+}
+
+/* ── Table ─────────────────────────────────────────────────────────── */
+.paie-table-container {
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.paie-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.paie-table-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.paie-table-header span {
+  font-size: 0.8rem;
+  color: var(--gray-400, #9ca3af);
+}
+
+.paie-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.paie-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-400, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background: var(--gray-50, #f9fafb);
+}
+
+.paie-table td {
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  color: var(--text-primary, #1f2937);
+}
+
+.paie-table tr:last-child td {
+  border-bottom: none;
+}
+
+.paie-table tr:hover td {
+  background: rgba(124, 58, 237, 0.02);
+}
+
+.paie-employee-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.paie-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.paie-employee-name {
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.paie-employee-email {
+  font-size: 0.75rem;
+  color: var(--gray-400, #9ca3af);
+}
+
+.paie-salary-total {
+  font-weight: 700;
+  color: #059669;
+  font-size: 0.95rem;
+}
+
+.paie-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+}
+
+/* ── Empty State ───────────────────────────────────────────────────── */
+.paie-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--gray-400, #9ca3af);
+}
+
+.paie-empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.paie-empty h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary, #1f2937);
+}
+
+.paie-empty p {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+}
+
+/* ── Loading ───────────────────────────────────────────────────────── */
+.paie-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+/* ── Employee Payslip Cards ────────────────────────────────────────── */
+.paie-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.paie-card {
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+  padding: 1.25rem;
+  transition: all 0.25s ease;
+}
+
+.paie-card:hover {
+  border-color: #a78bfa;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.1);
+  transform: translateY(-2px);
+}
+
+.paie-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.paie-card-month {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary, #1f2937);
+}
+
+.paie-card-total {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: #059669;
+}
+
+.paie-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.paie-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed var(--border-color, #e5e7eb);
+}
+
+.paie-card-row:last-child {
+  border-bottom: none;
+}
+
+.paie-card-label {
+  color: var(--gray-500, #6b7280);
+}
+
+.paie-card-value {
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+/* ── Poste/Affectation management section ──────────────────────────── */
+.paie-section {
+  margin-bottom: 2rem;
+}
+
+.paie-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.paie-section-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.paie-form-card {
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.paie-form-card h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.paie-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.paie-form-grid .full {
+  grid-column: 1 / -1;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .paie-hero {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .paie-action-bar {
+    flex-direction: column;
+  }
+
+  .paie-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .paie-table-container {
+    overflow-x: auto;
+  }
+
+  .paie-table {
+    min-width: 700px;
+  }
+}

@@ -75,7 +75,7 @@ export default function AbsencesPage() {
   const filtered = data.filter((a) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    const empName = a.employe?.utilisateur ? `${a.employe.utilisateur.nom || ''} ${a.employe.utilisateur.prenom || ''}`.toLowerCase() : '';
+    const empName = `${a.employe?.nom || ''} ${a.employe?.prenom || ''}`.toLowerCase();
     return empName.includes(q) || (a.raison || '').toLowerCase().includes(q);
   });
 
@@ -124,7 +124,7 @@ export default function AbsencesPage() {
               </thead>
               <tbody>
                 {filtered.map((a) => {
-                  const emp = a.employe?.utilisateur;
+                  const emp = a.employe;
                   return (
                     <tr key={a.id}>
                       <td>
@@ -134,7 +134,7 @@ export default function AbsencesPage() {
                           </div>
                           <div>
                             <div style={{ fontWeight: 600 }}>{emp?.nom} {emp?.prenom}</div>
-                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>{emp?.email}</div>
+                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>{emp?.utilisateur?.email}</div>
                           </div>
                         </div>
                       </td>
@@ -193,7 +193,7 @@ export default function AbsencesPage() {
               <option value="">Select employee...</option>
               {employes.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.utilisateur?.nom} {e.utilisateur?.prenom}
+                  {e.nom} {e.prenom}
                 </option>
               ))}
             </select>

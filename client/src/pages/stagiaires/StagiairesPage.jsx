@@ -145,7 +145,7 @@ export default function StagiairesPage() {
                       </td>
                       <td style={{ maxWidth: 200 }}>{s.sujetDeStage || '—'}</td>
                       <td>
-                        {enc.utilisateur ? `${enc.utilisateur.nom || ''} ${enc.utilisateur.prenom || ''}`.trim() : '—'}
+                        {enc.nom ? `${enc.nom} ${enc.prenom}`.trim() : '—'}
                       </td>
                       <td>
                         <span style={{ fontSize: 'var(--text-xs)' }}>
@@ -212,7 +212,7 @@ export default function StagiairesPage() {
             <option value="">Select an employee...</option>
             {employes.map((e) => (
               <option key={e.id} value={e.id}>
-                {e.utilisateur?.nom} {e.utilisateur?.prenom} — {e.poste}
+                {e.nom} {e.prenom} — {e.poste}
               </option>
             ))}
           </select>

@@ -76,7 +76,7 @@ export default function HeuresSupPage() {
         <div><h1>Overtime Hours</h1><p>Track employee overtime hours.</p></div>
         <div className="page-header-actions">
           <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Add Overtime</button>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Ajouter </button>
           </RoleGuard>
         </div>
       </div>
@@ -111,7 +111,7 @@ export default function HeuresSupPage() {
                       <td>{h.description || '—'}</td>
                       <td>
                         <div className="table-actions">
-                          <RoleGuard roles={[ROLES.ADMIN]}>
+                          <RoleGuard roles={[ROLES.ADMIN , ROLES.RH]}>
                             <button className="btn-icon danger" onClick={() => setDeleteTarget(h.id)}>🗑️</button>
                           </RoleGuard>
                         </div>
@@ -127,7 +127,7 @@ export default function HeuresSupPage() {
 
       <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Delete Overtime" message="Remove this overtime record?" loading={deleteLoading} />
 
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Add Overtime"
+      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Ajouter"
         footer={<>
           <button className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSubmit} disabled={formLoading}>{formLoading ? 'Saving...' : 'Save'}</button>
@@ -137,7 +137,7 @@ export default function HeuresSupPage() {
             <label className="form-label form-label-required">Employee</label>
             <select className="form-select" value={form.employeId} onChange={(e) => setForm({ ...form, employeId: e.target.value })} required>
               <option value="">Select employee...</option>
-              {employes.map((e) => <option key={e.id} value={e.id}>{e.utilisateur?.nom} {e.utilisateur?.prenom}</option>)}
+              {employes.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
             </select>
           </div>
           <div className="form-row">

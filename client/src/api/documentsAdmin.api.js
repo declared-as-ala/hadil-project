@@ -20,6 +20,9 @@ export const documentsAdminAPI = {
   // Admin / RH: update status + comment
   updateStatut: (id, data) => api.put(`/documents-admin/${id}/statut`, data),
 
-  // Admin: delete
+  // Admin / RH: delete any request
   delete: (id) => api.delete(`/documents-admin/${id}`),
+
+  // Employee: delete own request (only if en_attente)
+  deleteMaDemande: (id) => api.delete(`/documents-admin/mes-demandes/${id}`),
 };

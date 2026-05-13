@@ -1,15 +1,14 @@
 .topnav {
-  height: var(--topbar-height);
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
+  height: 80px;
+  background: transparent; /* Flow seamlessly into main content */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 32px;
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: var(--shadow-sm);
+  /* Removed border and shadow for a cleaner integration */
 }
 
 .topnav-left {
@@ -20,17 +19,18 @@
 
 .topnav-menu-btn {
   display: none;
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   font-size: 1.3rem;
-  color: var(--gray-600);
+  color: var(--gray-700);
   cursor: pointer;
-  padding: 4px;
-  border-radius: var(--border-radius);
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 .topnav-menu-btn:hover {
-  background: var(--gray-100);
+  background: #fff;
 }
 
 .topnav-search {
@@ -41,39 +41,46 @@
 
 .topnav-search-icon {
   position: absolute;
-  left: 12px;
-  font-size: 0.85rem;
-  opacity: 0.5;
+  left: 14px;
+  font-size: 1rem;
+  color: var(--gray-400);
 }
 
 .topnav-search-input {
-  padding: 8px 12px 8px 36px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-full);
-  background: var(--gray-50);
+  padding: 10px 16px 10px 42px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
   font-size: var(--text-sm);
-  width: 280px;
-  transition: all 0.2s ease;
+  width: 300px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
 }
 
 .topnav-search-input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  background: var(--bg-card);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-  width: 320px;
+  border-color: #a855f7;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15);
+  width: 360px;
 }
 
 .topnav-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .topnav-user {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  padding: 6px 8px 6px 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 100px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
 }
 
 .topnav-user-info {
@@ -83,52 +90,68 @@
 }
 
 .topnav-user-name {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--gray-800);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1.2;
 }
 
 .topnav-user-role {
-  font-size: var(--text-xs);
-  color: var(--gray-400);
+  font-size: 0.7rem;
+  color: var(--gray-500);
+  font-weight: 500;
 }
 
 .topnav-avatar {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: var(--color-primary);
+  background: linear-gradient(135deg, #a855f7, #6366f1);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-sm);
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
 }
 
 .topnav-avatar:hover {
-  background: var(--color-primary-hover);
-  transform: scale(1.08);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+  transform: scale(1.05);
+  box-shadow: 0 6px 15px rgba(168, 85, 247, 0.4);
 }
 
 .topnav-avatar:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
-
 .topnav-logout {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
   color: var(--gray-500) !important;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
 }
 
 .topnav-logout:hover {
-  color: var(--color-danger) !important;
-  background: var(--color-danger-light) !important;
+  color: #ef4444 !important;
+  background: #fee2e2 !important;
+  border-color: #fecaca;
+  transform: rotate(10deg);
 }
 
 @media (max-width: 768px) {
+  .topnav {
+    padding: 0 20px;
+  }
+  
   .topnav-menu-btn {
     display: flex;
   }

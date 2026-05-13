@@ -21,22 +21,22 @@ const menuItems = [
     icon: '👥',
     roles: [ROLES.ADMIN, ROLES.RH],
   },
-  {
-    label: 'Interns',
-    path: '/stagiaires',
-    icon: '🎓',
-    roles: [ROLES.ADMIN, ROLES.RH],
-  },
-  {
-    label: 'Contracts',
-    path: '/contrats',
-    icon: '📄',
-    roles: [ROLES.ADMIN, ROLES.RH],
-  },
-  {
-    section: 'Time Off',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
+  //{
+  //label: 'Stagiaires',
+  //path: '/stagiaires',
+  //icon: '🎓',
+  //roles: [ROLES.ADMIN, ROLES.RH],
+  //},
+  //{
+  //label: 'Contracts',
+  //path: '/contrats',
+  //icon: '📄',
+  //roles: [ROLES.ADMIN, ROLES.RH],
+  //},
+  //{
+  //section: 'Time Off',
+  //roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
+  //},
   {
     label: 'Absences',
     path: '/absences',
@@ -44,20 +44,10 @@ const menuItems = [
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
   {
-    label: 'Leave Requests',
+    label: 'Demande Congés',
     path: '/conges',
     icon: '🏖️',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    label: 'Overtime',
-    path: '/heures-sup',
-    icon: '⏰',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    section: 'Communication',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },
   {
     label: 'Demandes Docs',
@@ -66,11 +56,27 @@ const menuItems = [
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
   {
-    label: 'Réclamations',
-    path: '/demandes',
-    icon: '📩',
+    label: 'Heures Sup',
+    path: '/heures-sup',
+    icon: '⏰',
+    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
+  },
+  {
+    label: 'Gestion Paie',
+    path: '/paie',
+    icon: '💰',
+    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
+  },
+  {
+    section: 'Communication',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },
+  //{
+  //label: 'Réclamations',
+  //path: '/demandes',
+  // icon: '📩',
+  //roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
+  //},
   {
     label: 'Messages',
     path: '/messages',
@@ -87,24 +93,24 @@ const menuItems = [
     icon: '🚀',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
-  {
-    label: 'Tasks',
-    path: '/taches',
-    icon: '✅',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    label: 'Meetings',
-    path: '/reunions',
-    icon: '👨‍👨‍👨',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
+  //{
+  //label: 'Taches',
+  //path: '/taches',
+  //icon: '✅',
+  //roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
+  //},
+  // {
+  // label: 'Reunions',
+  //path: '/reunions',
+  //icon: '👨‍👨',
+  //roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
+  //},
   {
     section: 'Administration',
     roles: [ROLES.ADMIN],
   },
   {
-    label: 'Admin Panel',
+    label: 'Admin ',
     path: '/admin',
     icon: '⚙️',
     roles: [ROLES.ADMIN],
@@ -114,7 +120,7 @@ const menuItems = [
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },
   {
-    label: 'My Profile',
+    label: 'Profile',
     path: '/profile',
     icon: '👤',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],

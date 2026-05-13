@@ -161,7 +161,7 @@ export default function TachesPage() {
               <label className="form-label">Assigned To</label>
               <select className="form-select" value={form.assigneAId} onChange={(e) => setForm({ ...form, assigneAId: e.target.value })}>
                 <option value="">Unassigned</option>
-                {employes.map((e) => <option key={e.id} value={e.id}>{e.utilisateur?.nom} {e.utilisateur?.prenom}</option>)}
+                {employes.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
               </select>
             </div>
             <div className="form-group">

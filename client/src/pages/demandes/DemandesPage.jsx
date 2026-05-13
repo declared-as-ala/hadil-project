@@ -127,7 +127,7 @@ export default function DemandesPage() {
               </thead>
               <tbody>
                 {filtered.map((d) => {
-                  const emp = d.employe?.utilisateur;
+                  const emp = d.employe;
                   return (
                     <tr key={d.id}>
                       <td>
@@ -175,7 +175,7 @@ export default function DemandesPage() {
             <label className="form-label form-label-required">Employee</label>
             <select className="form-select" value={form.employeId} onChange={(e) => setForm({ ...form, employeId: e.target.value })} required>
               <option value="">Select...</option>
-              {employes.map((e) => <option key={e.id} value={e.id}>{e.utilisateur?.nom} {e.utilisateur?.prenom}</option>)}
+              {employes.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
             </select>
           </div>
           <div className="form-group">
@@ -209,7 +209,7 @@ export default function DemandesPage() {
             </div>
             <div className="detail-field">
               <div className="detail-field-label">Employee</div>
-              <div className="detail-field-value">{detailItem.employe?.utilisateur?.nom} {detailItem.employe?.utilisateur?.prenom}</div>
+              <div className="detail-field-value">{detailItem.employe?.nom} {detailItem.employe?.prenom}</div>
             </div>
             <div className="detail-field">
               <div className="detail-field-label">Created</div>

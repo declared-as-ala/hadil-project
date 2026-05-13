@@ -142,7 +142,7 @@ export default function ReunionsPage() {
               <label className="form-label">Organizer</label>
               <select className="form-select" value={form.organisateurId} onChange={(e) => setForm({ ...form, organisateurId: e.target.value })}>
                 <option value="">Select...</option>
-                {employes.map((e) => <option key={e.id} value={e.id}>{e.utilisateur?.nom} {e.utilisateur?.prenom}</option>)}
+                {employes.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
               </select>
             </div>
           </div>

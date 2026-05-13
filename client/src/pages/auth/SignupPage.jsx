@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -68,68 +69,22 @@ export default function SignupPage() {
       </div>
 
       <div className="auth-layout">
-        {/* Left panel — branding */}
-        <div className="auth-brand-panel">
-          <div className="auth-brand-content">
-            <div className="auth-brand-logo">
-              <span className="auth-brand-logo-icon">&#127970;</span>
-              <span className="auth-brand-logo-text">HR System</span>
-            </div>
-
-            <div className="auth-brand-main">
-              <h1 className="auth-brand-title">
-                Start Managing
-                <br />
-                <span className="auth-brand-title-accent">Your Team</span>
-              </h1>
-              <p className="auth-brand-description">
-                Create your account and get access to powerful HR tools designed to
-                make workforce management effortless.
-              </p>
-
-              <div className="auth-brand-features">
-                <div className="auth-feature">
-                  <span className="auth-feature-icon">&#128101;</span>
-                  <div>
-                    <strong>Team Directory</strong>
-                    <span>Centralized employee profiles</span>
-                  </div>
-                </div>
-                <div className="auth-feature">
-                  <span className="auth-feature-icon">&#128202;</span>
-                  <div>
-                    <strong>Analytics Dashboard</strong>
-                    <span>Real-time HR metrics &amp; insights</span>
-                  </div>
-                </div>
-                <div className="auth-feature">
-                  <span className="auth-feature-icon">&#128276;</span>
-                  <div>
-                    <strong>Smart Notifications</strong>
-                    <span>Never miss a request or deadline</span>
-                  </div>
-                </div>
-                <div className="auth-feature">
-                  <span className="auth-feature-icon">&#128737;</span>
-                  <div>
-                    <strong>Role-Based Access</strong>
-                    <span>Secure permissions for every level</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="auth-brand-footer">
-            <span>&#169; 2025 HR Management System</span>
-          </div>
-        </div>
-
-        {/* Right panel — signup form */}
         <div className="auth-form-panel">
-          <div className="auth-form-wrapper">
+          <div className="auth-form-wrapper auth-card-lg">
+            
+            {/* Branding centered in the card */}
+            <div className="auth-card-branding">
+              <div className="auth-brand-logo-icon">&#127970;</div>
+              <div className="auth-brand-logo-text">HR System</div>
+            </div>
+
+            {/* Toggle Tabs */}
+            <div className="auth-tabs">
+              <Link to="/login" className="auth-tab">Sign In</Link>
+              <Link to="/signup" className="auth-tab active">Sign Up</Link>
+            </div>
+
             <div className="auth-form-header">
-              <span className="auth-form-greeting">&#127775;</span>
               <h2 className="auth-form-title">Create your account</h2>
               <p className="auth-form-subtitle">Fill in your details to get started</p>
             </div>
@@ -192,13 +147,6 @@ export default function SignupPage() {
                 )}
               </button>
             </form>
-
-            <div className="auth-form-footer">
-              <span>Already have an account?</span>
-              <Link to="/login" className="auth-form-link">
-                Sign in <span>&rarr;</span>
-              </Link>
-            </div>
 
             <div className="auth-divider">
               <span>Protected by enterprise-grade security</span>

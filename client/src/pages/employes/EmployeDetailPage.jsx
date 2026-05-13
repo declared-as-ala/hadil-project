@@ -32,7 +32,6 @@ export default function EmployeDetailPage() {
   if (loading) return <div className="crud-loading"><div className="spinner" /></div>;
   if (!emp) return <div className="crud-loading">Employee not found</div>;
 
-  const u = emp.utilisateur || {};
   const statusVariant = emp.status === 'actif' ? 'success' : emp.status === 'inactif' ? 'gray' : 'warning';
 
   return (
@@ -46,44 +45,52 @@ export default function EmployeDetailPage() {
         </div>
         <div className="page-header-actions">
           <button className="btn btn-outline" onClick={() => navigate(`/employes/${id}/edit`)}>
-            \u270F\uFE0F Edit
+            ✏️ Edit
           </button>
         </div>
       </div>
 
       <div className="detail-header">
         <div className="avatar avatar-lg">
-          {(u.nom?.[0] || u.fullName?.[0] || 'E').toUpperCase()}
+          {(emp.nom?.[0] || 'E').toUpperCase()}
         </div>
         <div className="detail-header-info">
           <div className="detail-header-title">
-            {u.nom || u.fullName} {u.prenom}
+            {emp.nom} {emp.prenom}
           </div>
           <div className="detail-header-subtitle">
-            {u.email} {u.adresse && ` &middot; ${u.adresse}`}
+            {emp.utilisateur?.email}
           </div>
         </div>
         <Badge variant={statusVariant}>{emp.status}</Badge>
       </div>
 
       <div className="card" style={{ marginBottom: 24 }}>
-        <h3 className="card-title" style={{ marginBottom: 20 }}>Information</h3>
+        <h3 className="card-title" style={{ marginBottom: 20 }}>HR Information</h3>
         <div className="detail-grid">
           <div className="detail-field">
             <div className="detail-field-label">Position</div>
             <div className="detail-field-value">{emp.poste || '—'}</div>
           </div>
           <div className="detail-field">
-            <div className="detail-field-label">Department</div>
-            <div className="detail-field-value">{emp.departement || '—'}</div>
+            <div className="detail-field-label">Phone</div>
+            <div className="detail-field-value">{emp.telephone || '—'}</div>
           </div>
           <div className="detail-field">
             <div className="detail-field-label">Hire Date</div>
             <div className="detail-field-value">{formatDate(emp.dateEmbauche)}</div>
           </div>
           <div className="detail-field">
-            <div className="detail-field-label">Phone</div>
-            <div className="detail-field-value">{emp.telephone || '—'}</div>
+            <div className="detail-field-label">Base Salary</div>
+            <div className="detail-field-value">
+              {emp.salaire_base != null ? `${emp.salaire_base.toLocaleString()} DA` : '—'}
+            </div>
+          </div>
+          <div className="detail-field">
+            <div className="detail-field-label">Overtime Rate</div>
+            <div className="detail-field-value">
+              {emp.prix_heure_sup != null ? `${emp.prix_heure_sup.toLocaleString()} DA/hr` : '—'}
+            </div>
           </div>
           <div className="detail-field">
             <div className="detail-field-label">Created</div>

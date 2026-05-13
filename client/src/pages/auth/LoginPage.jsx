@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -44,7 +45,6 @@ export default function LoginPage() {
 
   return (
     <div className="auth-page">
-      {/* Animated background */}
       <div className="auth-bg">
         <div className="auth-bg-shape auth-bg-shape-1" />
         <div className="auth-bg-shape auth-bg-shape-2" />
@@ -53,70 +53,23 @@ export default function LoginPage() {
       </div>
 
       <div className="auth-layout">
-        {/* Left panel — branding */}
-        <div className="auth-brand-panel">
-          <div className="auth-brand-content">
-            <div className="auth-brand-logo">
-              <span className="auth-brand-logo-icon">&#127970;</span>
-              <span className="auth-brand-logo-text">HR System</span>
-            </div>
-
-            <div className="auth-brand-main">
-              <h1 className="auth-brand-title">
-                Human Resource
-                <br />
-                <span className="auth-brand-title-accent">Management</span>
-              </h1>
-              <p className="auth-brand-description">
-                Streamline your workforce management with our comprehensive HR platform.
-                Track employees, manage contracts, schedule projects, and more — all in one place.
-              </p>
-
-              <div className="auth-brand-features">
-                <div className="auth-feature">
-                  <span className="auth-feature-icon">&#9989;</span>
-                  <div>
-                    <strong>Employee Management</strong>
-                    <span>Complete workforce oversight</span>
-                  </div>
-                </div>
-                <div className="auth-feature">
-                  <span className="auth-feature-icon">&#128197;</span>
-                  <div>
-                    <strong>Leave &amp; Attendance</strong>
-                    <span>Automated tracking system</span>
-                  </div>
-                </div>
-                <div className="auth-feature">
-                  <span className="auth-feature-icon">&#128640;</span>
-                  <div>
-                    <strong>Project Tracking</strong>
-                    <span>Tasks, meetings &amp; milestones</span>
-                  </div>
-                </div>
-                <div className="auth-feature">
-                  <span className="auth-feature-icon">&#128196;</span>
-                  <div>
-                    <strong>Contract Lifecycle</strong>
-                    <span>CDI, CDD &amp; CIVP management</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="auth-brand-footer">
-            <span>&#169; 2025 HR Management System</span>
-          </div>
-        </div>
-
-        {/* Right panel — login form */}
         <div className="auth-form-panel">
           <div className="auth-form-wrapper">
+
+            {/* Branding centered in the card */}
+            <div className="auth-card-branding">
+              <div className="auth-brand-logo-icon">&#127970;</div>
+              <div className="auth-brand-logo-text">HR System</div>
+            </div>
+
+            {/* Toggle Tabs */}
+            <div className="auth-tabs">
+              <Link to="/login" className="auth-tab active">Sign In</Link>
+              <Link to="/signup" className="auth-tab">Sign Up</Link>
+            </div>
+
             <div className="auth-form-header">
-              <span className="auth-form-greeting">&#128075;</span>
               <h2 className="auth-form-title">Welcome back</h2>
-              <p className="auth-form-subtitle">Enter your credentials to access your workspace</p>
             </div>
 
             <form onSubmit={handleSubmit} className="auth-form" noValidate>
@@ -192,13 +145,6 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            <div className="auth-form-footer">
-              <span>Don&apos;t have an account?</span>
-              <Link to="/signup" className="auth-form-link">
-                Create an account <span>&rarr;</span>
-              </Link>
-            </div>
 
             <div className="auth-divider">
               <span>Protected by enterprise-grade security</span>

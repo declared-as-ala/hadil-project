@@ -40,7 +40,7 @@ export default function EmployesPage() {
     setDeleteLoading(true);
     try {
       await employesAPI.delete(deleteTarget);
-      toast.success('Deleted', 'Employee has been removed successfully.');
+      toast.success('Deleted', 'Employee and their account have been removed.');
       setData((prev) => prev.filter((e) => e.id !== deleteTarget));
       setDeleteTarget(null);
     } catch (err) {
@@ -53,12 +53,11 @@ export default function EmployesPage() {
   const filtered = data.filter((e) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    const u = e.utilisateur || {};
-    const nom = (u.nom || '').toLowerCase();
-    const prenom = (u.prenom || '').toLowerCase();
-    const fullName = (u.fullName || '').toLowerCase();
-    const email = (u.email || '').toLowerCase();
-    return nom.includes(q) || prenom.includes(q) || fullName.includes(q) || email.includes(q) || (e.poste || '').toLowerCase().includes(q);
+    const nom = (e.nom || '').toLowerCase();
+    const prenom = (e.prenom || '').toLowerCase();
+    const email = (e.utilisateur?.email || '').toLowerCase();
+    const poste = (e.poste || '').toLowerCase();
+    return nom.includes(q) || prenom.includes(q) || email.includes(q) || poste.includes(q);
   });
 
   if (loading) return <div className="crud-loading"><div className="spinner" /></div>;
@@ -131,7 +130,6 @@ export default function EmployesPage() {
               </thead>
               <tbody>
                 {filtered.map((emp) => {
-                  const u = emp.utilisateur || {};
                   const statusVariant =
                     emp.status === 'actif' ? 'success' : emp.status === 'inactif' ? 'gray' : 'warning';
                   return (
@@ -139,14 +137,14 @@ export default function EmployesPage() {
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div className="avatar avatar-sm">
-                            {(u.nom?.[0] || u.fullName?.[0] || 'E').toUpperCase()}
+                            {(emp.nom?.[0] || 'E').toUpperCase()}
                           </div>
                           <div>
                             <div style={{ fontWeight: 600, color: 'var(--gray-900)' }}>
-                              {u.nom || u.fullName} {u.prenom}
+                              {emp.nom} {emp.prenom}
                             </div>
                             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>
-                              {u.email}
+                              {emp.utilisateur?.email}
                             </div>
                           </div>
                         </div>
@@ -192,7 +190,7 @@ export default function EmployesPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Delete Employee"
-        message="Are you sure you want to delete this employee? This action cannot be undone."
+        message="Are you sure you want to delete this employee? Their login account will also be removed. This action cannot be undone."
         confirmLabel="Delete"
         confirmVariant="danger"
         loading={deleteLoading}

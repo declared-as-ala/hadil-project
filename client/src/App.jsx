@@ -26,6 +26,7 @@ import ReunionsPage from './pages/reunions/ReunionsPage';
 import ContratsPage from './pages/contrats/ContratsPage';
 import AdminPage from './pages/admin/AdminPage';
 import DocumentsAdminPage from './pages/documentsAdmin/DocumentsAdminPage';
+import PaiePage from './pages/paie/PaiePage';
 import ProfilePage from './pages/profile/Profile';
 import UnauthorizedPage from './pages/errors/UnauthorizedPage';
 
@@ -242,6 +243,18 @@ export default function App() {
                 <LayoutPage>
                   <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE]}>
                     <DocumentsAdminPage />
+                  </RequireAuth>
+                </LayoutPage>
+              }
+            />
+
+            {/* Paie */}
+            <Route
+              path="/paie"
+              element={
+                <LayoutPage>
+                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE]}>
+                    <PaiePage />
                   </RequireAuth>
                 </LayoutPage>
               }

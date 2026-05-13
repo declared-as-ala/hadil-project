@@ -128,7 +128,7 @@ export default function ProjetsPage() {
               </thead>
               <tbody>
                 {filtered.map((p) => {
-                  const chef = p.chefDeProjet?.utilisateur;
+                  const chef = p.chefDeProjet;
                   return (
                     <tr key={p.id}>
                       <td>
@@ -188,7 +188,7 @@ export default function ProjetsPage() {
             <label className="form-label">Project Lead</label>
             <select className="form-select" value={form.chefDeProjetId} onChange={(e) => setForm({ ...form, chefDeProjetId: e.target.value })}>
               <option value="">None</option>
-              {employes.map((e) => <option key={e.id} value={e.id}>{e.utilisateur?.nom} {e.utilisateur?.prenom}</option>)}
+              {employes.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
             </select>
           </div>
         </form>
@@ -208,7 +208,7 @@ export default function ProjetsPage() {
             </div>
             <div className="detail-field">
               <div className="detail-field-label">Lead</div>
-              <div className="detail-field-value">{detailItem.chefDeProjet?.utilisateur?.nom} {detailItem.chefDeProjet?.utilisateur?.prenom}</div>
+              <div className="detail-field-value">{detailItem.chefDeProjet?.nom} {detailItem.chefDeProjet?.prenom}</div>
             </div>
             <div className="detail-field">
               <div className="detail-field-label">Team Size</div>
@@ -223,9 +223,9 @@ export default function ProjetsPage() {
                 {detailItem.membres.map((m) => (
                   <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--gray-50)', borderRadius: 'var(--border-radius)', fontSize: 'var(--text-sm)' }}>
                     <div className="avatar avatar-sm" style={{ width: 28, height: 28, fontSize: 'var(--text-xs)' }}>
-                      {(m.utilisateur?.nom?.[0] || 'M').toUpperCase()}
+                      {(m.nom?.[0] || 'M').toUpperCase()}
                     </div>
-                    {m.utilisateur?.nom} {m.utilisateur?.prenom}
+                    {m.nom} {m.prenom}
                   </div>
                 ))}
               </div>
@@ -242,7 +242,7 @@ export default function ProjetsPage() {
         </>}>
         <select className="form-select" value={assignEmp} onChange={(e) => setAssignEmp(e.target.value)}>
           <option value="">Select employee...</option>
-          {employes.map((e) => <option key={e.id} value={e.id}>{e.utilisateur?.nom} {e.utilisateur?.prenom}</option>)}
+          {employes.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
         </select>
       </Modal>
     </div>
