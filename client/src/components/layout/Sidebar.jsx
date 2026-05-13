@@ -68,6 +68,12 @@ const menuItems = [
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
   {
+    label: 'AI CV Analyzer',
+    path: '/hr/cv-ai',
+    icon: '🤖',
+    roles: [ROLES.ADMIN, ROLES.RH],
+  },
+  {
     section: 'Communication',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },

@@ -32,6 +32,7 @@ const demandeDocumentsRoutes = require('./routes/demandeDocuments.routes');
 const postesRoutes = require('./routes/postes.routes');
 const affectationsRoutes = require('./routes/affectations.routes');
 const paiesRoutes = require('./routes/paies.routes');
+const aiCvRoutes = require('./routes/aiCv.routes');
 const { notFoundHandler, errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
@@ -75,6 +76,7 @@ const startServer = () => {
   app.use('/api/postes', postesRoutes);
   app.use('/api/affectations', affectationsRoutes);
   app.use('/api/paies', paiesRoutes);
+  app.use('/api/hr/cv-ai', aiCvRoutes);
 
   // 404 handler
   app.all('*', notFoundHandler);

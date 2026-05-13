@@ -29,6 +29,10 @@ import DocumentsAdminPage from './pages/documentsAdmin/DocumentsAdminPage';
 import PaiePage from './pages/paie/PaiePage';
 import ProfilePage from './pages/profile/Profile';
 import UnauthorizedPage from './pages/errors/UnauthorizedPage';
+import CvAiPage from './pages/cvAi/CvAiPage';
+import CvAiDetailPage from './pages/cvAi/CvAiDetailPage';
+import CvAiChatPage from './pages/cvAi/CvAiChatPage';
+import CvAiHistoryPage from './pages/cvAi/CvAiHistoryPage';
 
 // Styles
 import './styles/variables.css';
@@ -255,6 +259,48 @@ export default function App() {
                 <LayoutPage>
                   <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE]}>
                     <PaiePage />
+                  </RequireAuth>
+                </LayoutPage>
+              }
+            />
+
+            {/* AI CV Analyzer */}
+            <Route
+              path="/hr/cv-ai"
+              element={
+                <LayoutPage>
+                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH]}>
+                    <CvAiPage />
+                  </RequireAuth>
+                </LayoutPage>
+              }
+            />
+            <Route
+              path="/hr/cv-ai/history"
+              element={
+                <LayoutPage>
+                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH]}>
+                    <CvAiHistoryPage />
+                  </RequireAuth>
+                </LayoutPage>
+              }
+            />
+            <Route
+              path="/hr/cv-ai/:id"
+              element={
+                <LayoutPage>
+                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH]}>
+                    <CvAiDetailPage />
+                  </RequireAuth>
+                </LayoutPage>
+              }
+            />
+            <Route
+              path="/hr/cv-ai/:id/chat"
+              element={
+                <LayoutPage>
+                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH]}>
+                    <CvAiChatPage />
                   </RequireAuth>
                 </LayoutPage>
               }
