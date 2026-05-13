@@ -6,35 +6,16 @@ const tokenService = require('./token.service');
 
 const SALT_ROUNDS = 10;
 
+/**
+ * Build the public user payload returned after login.
+ * Includes the linked employeeId (if any) so the frontend and middleware
+ * can attach it to req.user.
+ */
 const buildPublicUser = async (user) => {
   const userData = user.toJSON();
-  // Get associated employee record if it exists
   const employe = await Employe.findOne({ utilisateur: user._id });
   userData.employeeId = employe ? employe._id : null;
   return userData;
-};
-
-const registerUser = async ({ fullName, email, password }) => {
-  const existing = await User.findOne({ email: email.toLowerCase() });
-
-  if (existing) {
-    throw new ApiError(409, 'Email is already in use');
-  }
-
-  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-  const user = await User.create({
-    fullName,
-    email: email.toLowerCase(),
-    passwordHash,
-  });
-
-  const accessToken = tokenService.generateAccessToken(user);
-
-  return {
-    user: await buildPublicUser(user),
-    accessToken,
-  };
 };
 
 const loginUser = async ({ email, password }) => {
@@ -61,7 +42,5 @@ const loginUser = async ({ email, password }) => {
 };
 
 module.exports = {
-  registerUser,
   loginUser,
 };
-

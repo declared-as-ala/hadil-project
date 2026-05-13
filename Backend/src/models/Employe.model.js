@@ -8,20 +8,37 @@ const employeSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    nom: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+    prenom: {
+      type: String,
+      trim: true,
+      required: true,
+    },
     poste: {
       type: String,
       trim: true,
     },
-    departement: {
-      type: String,
-      trim: true,
-    },
+
     dateEmbauche: {
       type: Date,
     },
     telephone: {
       type: String,
       trim: true,
+    },
+    salaire_base: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    prix_heure_sup: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     status: {
       type: String,

@@ -3,7 +3,7 @@ const Employe = require('../models/Employe.model');
 const ApiError = require('../utils/ApiError');
 
 const POPULATE_OPTS = [
-  { path: 'employe', select: 'poste departement', populate: { path: 'utilisateur', select: 'nom prenom email' } },
+  { path: 'employe', select: 'nom prenom poste dateEmbauche salaire_base', populate: { path: 'utilisateur', select: 'nom prenom email' } },
 ];
 
 class DemandeDocumentService {
@@ -63,10 +63,19 @@ class DemandeDocumentService {
     return demande;
   }
 
-  /* ── Admin: delete ───────────────────────── */
+  /* ── Admin: delete any ───────────────────── */
   async deleteDemande(id) {
     const demande = await DemandeDocument.findByIdAndDelete(id);
     if (!demande) throw new ApiError(404, 'Demande de document introuvable.');
+    return { message: 'Demande supprimée avec succès.' };
+  }
+
+  /* ── Employee: delete own */
+  async deleteMaDemande(userId, id) {
+    const employe = await this._findEmployeByUserId(userId);
+    const demande = await DemandeDocument.findOne({ _id: id, employe: employe._id });
+    if (!demande) throw new ApiError(404, 'Demande introuvable ou accès refusé.');
+    await DemandeDocument.findByIdAndDelete(id);
     return { message: 'Demande supprimée avec succès.' };
   }
 }

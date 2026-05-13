@@ -3,36 +3,11 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
-    fullName: {
-      type: String,
-      trim: true,
-    },
-    avatar: {
-      type: String,
-    },
-    matricule: {
-      type: String,
-      trim: true,
-      unique: true,
-      sparse: true,
-    },
-    nom: {
-      type: String,
-      trim: true,
-    },
-    prenom: {
-      type: String,
-      trim: true,
-    },
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
-      trim: true,
-    },
-    adresse: {
-      type: String,
       trim: true,
     },
     passwordHash: {
@@ -42,7 +17,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: [ 'admin', 'rh', 'employe', 'stagiaire'],
+      enum: ['admin', 'rh', 'employe', 'stagiaire'],
       default: 'employe',
     },
   },
@@ -68,4 +43,3 @@ userSchema.methods.isPasswordMatch = async function isPasswordMatch(password) {
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
-

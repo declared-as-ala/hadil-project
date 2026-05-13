@@ -29,10 +29,17 @@ const updateStatut = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, demande, 'Statut mis à jour.'));
 });
 
-/* Admin: delete */
+/* Admin / RH: delete any request */
 const deleteDemande = asyncHandler(async (req, res) => {
   const result = await demandeDocumentService.deleteDemande(req.params.id);
   res.status(200).json(new ApiResponse(200, null, result.message));
 });
 
-module.exports = { createDemande, getMesDemandes, getAllDemandes, updateStatut, deleteDemande };
+/* Employee: delete own request (only if en_attente) */
+const deleteMaDemande = asyncHandler(async (req, res) => {
+  const userId = req.user.id || req.user._id;
+  const result = await demandeDocumentService.deleteMaDemande(userId, req.params.id);
+  res.status(200).json(new ApiResponse(200, null, result.message));
+});
+
+module.exports = { createDemande, getMesDemandes, getAllDemandes, updateStatut, deleteDemande, deleteMaDemande };

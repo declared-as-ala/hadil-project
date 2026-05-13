@@ -29,6 +29,9 @@ const tachesRoutes = require('./routes/taches.routes');
 const reunionsRoutes = require('./routes/reunions.routes');
 const contratsRoutes = require('./routes/contrats.routes');
 const demandeDocumentsRoutes = require('./routes/demandeDocuments.routes');
+const postesRoutes = require('./routes/postes.routes');
+const affectationsRoutes = require('./routes/affectations.routes');
+const paiesRoutes = require('./routes/paies.routes');
 const { notFoundHandler, errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
@@ -69,6 +72,9 @@ const startServer = () => {
   app.use('/api/reunions', reunionsRoutes);
   app.use('/api/contrats', contratsRoutes);
   app.use('/api/documents-admin', demandeDocumentsRoutes);
+  app.use('/api/postes', postesRoutes);
+  app.use('/api/affectations', affectationsRoutes);
+  app.use('/api/paies', paiesRoutes);
 
   // 404 handler
   app.all('*', notFoundHandler);

@@ -29,7 +29,10 @@ router.put(
   ctrl.updateStatut
 );
 
-// Admin: DELETE
-router.delete('/:id', authorize('admin'), validate(demandeDocumentParamsSchema), ctrl.deleteDemande);
+// Admin: DELETE any request
+router.delete('/:id', authorize('admin', 'rh'), validate(demandeDocumentParamsSchema), ctrl.deleteDemande);
+
+// Employee: DELETE own request (only if still 'en_attente')
+router.delete('/mes-demandes/:id', authorize('employe', 'stagiaire'), validate(demandeDocumentParamsSchema), ctrl.deleteMaDemande);
 
 module.exports = router;
