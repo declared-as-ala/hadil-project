@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import './Sidebar.css';
 import { useAuth } from '../../hooks/useAuth';
@@ -20,22 +21,6 @@ const menuItems = [
     icon: '👥',
     roles: [ROLES.ADMIN, ROLES.RH],
   },
-  //{
-  //label: 'Stagiaires',
-  //path: '/stagiaires',
-  //icon: '🎓',
-  //roles: [ROLES.ADMIN, ROLES.RH],
-  //},
-  //{
-  //label: 'Contracts',
-  //path: '/contrats',
-  //icon: '📄',
-  //roles: [ROLES.ADMIN, ROLES.RH],
-  //},
-  //{
-  //section: 'Time Off',
-  //roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  //},
   {
     label: 'Absences',
     path: '/absences',
@@ -76,12 +61,6 @@ const menuItems = [
     section: 'Communication',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
   },
-  //{
-  //label: 'Réclamations',
-  //path: '/demandes',
-  // icon: '📩',
-  //roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
-  //},
   {
     label: 'Messages',
     path: '/messages',
@@ -98,18 +77,6 @@ const menuItems = [
     icon: '🚀',
     roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
   },
-  //{
-  //label: 'Taches',
-  //path: '/taches',
-  //icon: '✅',
-  //roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  //},
-  // {
-  // label: 'Reunions',
-  //path: '/reunions',
-  //icon: '👨‍👨',
-  //roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  //},
   {
     section: 'Administration',
     roles: [ROLES.ADMIN],
@@ -134,15 +101,38 @@ const menuItems = [
 
 export default function Sidebar({ collapsed = false, onToggleCollapse = () => {} }) {
   const { role } = useAuth();
+  const [filter, setFilter] = useState('');
 
-  const canSee = (item) => {
-    if (item.section) {
-      return item.roles.includes(role);
+  const visibleItems = useMemo(
+    () => menuItems.filter((item) => item.roles.includes(role)),
+    [role]
+  );
+
+  // Filter by label. Drop section headers that end up with no matching links
+  // beneath them (sections are flat in `menuItems`, so we scan forward to the
+  // next section to decide).
+  const filteredItems = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return visibleItems;
+
+    const result = [];
+    for (let i = 0; i < visibleItems.length; i += 1) {
+      const item = visibleItems[i];
+      if (item.section) {
+        let hasMatch = false;
+        for (let j = i + 1; j < visibleItems.length && !visibleItems[j].section; j += 1) {
+          if (visibleItems[j].label?.toLowerCase().includes(q)) {
+            hasMatch = true;
+            break;
+          }
+        }
+        if (hasMatch) result.push(item);
+      } else if (item.label?.toLowerCase().includes(q)) {
+        result.push(item);
+      }
     }
-    return item.roles.includes(role);
-  };
-
-  const filteredItems = menuItems.filter(canSee);
+    return result;
+  }, [visibleItems, filter]);
 
   return (
     <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
@@ -156,9 +146,33 @@ export default function Sidebar({ collapsed = false, onToggleCollapse = () => {}
           onClick={onToggleCollapse}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? '\u25B6\uFE0F' : '\u25C0\uFE0F'}
+          {collapsed ? '▶️' : '◀️'}
         </button>
       </div>
+
+      {!collapsed && (
+        <div className="sidebar-search">
+          <span className="sidebar-search-icon">🔍</span>
+          <input
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter menu..."
+            className="sidebar-search-input"
+            aria-label="Filter menu"
+          />
+          {filter && (
+            <button
+              type="button"
+              className="sidebar-search-clear"
+              onClick={() => setFilter('')}
+              title="Clear filter"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
 
       <nav className="sidebar-nav">
         {filteredItems.map((item, idx) => {
@@ -185,6 +199,9 @@ export default function Sidebar({ collapsed = false, onToggleCollapse = () => {}
             </NavLink>
           );
         })}
+        {filter && filteredItems.length === 0 && !collapsed && (
+          <div className="sidebar-empty">No matches</div>
+        )}
       </nav>
     </aside>
   );

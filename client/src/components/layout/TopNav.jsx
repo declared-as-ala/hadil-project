@@ -20,14 +20,6 @@ export default function TopNav({ onMenuToggle }) {
         <button className="topnav-menu-btn" onClick={onMenuToggle} title="Toggle menu">
           &#9776;
         </button>
-        <div className="topnav-search">
-          <span className="topnav-search-icon">🔍</span>
-          <input
-            type="text"
-            placeholder="Search..."
-            className="topnav-search-input"
-          />
-        </div>
       </div>
       <div className="topnav-right">
         <div className="topnav-user">
