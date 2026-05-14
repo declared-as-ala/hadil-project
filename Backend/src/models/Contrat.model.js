@@ -85,6 +85,11 @@ contratSchema.methods.renouveler = function (notes) {
   return this.save();
 };
 
+// Hot paths: per-employee active-contract lookup (used by the
+// affectation->contract auto-sync), plus the admin list filtered by status.
+contratSchema.index({ employe: 1, status: 1 });
+contratSchema.index({ employe: 1, date_de_debut: -1 });
+
 const Contrat = mongoose.model('Contrat', contratSchema);
 
 module.exports = Contrat;

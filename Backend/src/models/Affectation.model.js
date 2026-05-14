@@ -21,5 +21,11 @@ const affectationSchema = new mongoose.Schema(
   }
 );
 
+// Hot paths: paie.service looks up the active affectation for an employee
+// via { employe, date_fin: null } and an overlap date range; the sync flow
+// also queries by employe.
+affectationSchema.index({ employe: 1, date_fin: 1 });
+affectationSchema.index({ employe: 1, date_debut: -1 });
+
 const Affectation = mongoose.model('Affectation', affectationSchema);
 module.exports = Affectation;

@@ -40,6 +40,11 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
+// Hot paths: inbox (destinataire + unread filter) and sent view (expediteur).
+// Sorted by date desc in both lists.
+messageSchema.index({ destinataire: 1, lu: 1, date: -1 });
+messageSchema.index({ expediteur: 1, date: -1 });
+
 const Message = mongoose.model('Message', messageSchema);
 
 module.exports = Message;

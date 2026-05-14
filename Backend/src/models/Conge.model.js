@@ -57,6 +57,11 @@ congeSchema.methods.prolonger = function (joursSupplementaires) {
   return this.save();
 };
 
+// Hot paths: per-employee list, status filter on admin view, and the
+// dashboard "out this week" query which scans by date_debut + status.
+congeSchema.index({ employe: 1, status: 1 });
+congeSchema.index({ status: 1, date_debut: 1 });
+
 const Conge = mongoose.model('Conge', congeSchema);
 
 module.exports = Conge;

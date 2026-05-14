@@ -35,6 +35,11 @@ const absenceSchema = new mongoose.Schema(
   }
 );
 
+// Hot path: list-by-employee and list-by-date-range filters used by
+// /api/absences and the per-employee scoping in the controller.
+absenceSchema.index({ employe: 1, date: -1 });
+absenceSchema.index({ date: -1 });
+
 const Absence = mongoose.model('Absence', absenceSchema);
 
 module.exports = Absence;

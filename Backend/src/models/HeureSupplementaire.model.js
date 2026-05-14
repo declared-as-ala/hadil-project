@@ -36,6 +36,9 @@ const heureSupplementaireSchema = new mongoose.Schema(
   }
 );
 
+// Hot path: payroll calculation scans overtime for an employee in a date range.
+heureSupplementaireSchema.index({ employe: 1, date: 1 });
+
 const HeureSupplementaire = mongoose.model('HeureSupplementaire', heureSupplementaireSchema);
 
 module.exports = HeureSupplementaire;
