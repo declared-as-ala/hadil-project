@@ -5,8 +5,8 @@ const ApiError = require('../utils/ApiError');
 const POPULATE_EMPLOYE = [
   {
     path: 'employe',
-    select: 'poste departement status',
-    populate: { path: 'utilisateur', select: 'nom prenom email avatar' },
+    select: 'nom prenom poste status',
+    populate: { path: 'utilisateur', select: 'email role' },
   },
 ];
 

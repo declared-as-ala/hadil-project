@@ -101,48 +101,6 @@
   margin-top: 4px;
 }
 
-.quick-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 16px;
-  padding: 24px;
-}
-
-.quick-action-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 12px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-  text-decoration: none;
-  color: var(--gray-700);
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 1);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.quick-action-btn:hover {
-  background: #fff;
-  color: #a855f7;
-  border-color: #f3e8ff;
-  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.15);
-  transform: translateY(-4px);
-  text-decoration: none;
-}
-
-.quick-action-icon {
-  font-size: 1.8rem;
-  transition: transform 0.3s ease;
-}
-
-.quick-action-btn:hover .quick-action-icon {
-  transform: scale(1.1) translateY(-2px);
-}
-
 /* Custom Mini Area Chart Styles */
 .mini-chart {
   width: 100%;

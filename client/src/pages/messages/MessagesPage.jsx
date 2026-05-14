@@ -173,13 +173,20 @@ export default function MessagesPage() {
       </Modal>
 
       {/* Message Detail Modal */}
-      {selectedMessage && (
+      {selectedMessage && (() => {
+        const other = view === 'inbox' ? selectedMessage.expediteur : selectedMessage.destinataire;
+        return (
         <Modal isOpen={!!selectedMessage} onClose={() => setSelectedMessage(null)} title="Message" size="lg">
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div>
                 <strong>{view === 'inbox' ? 'From: ' : 'To: '}</strong>
-                {selectedMessage.expediteur?.nom} {selectedMessage.expediteur?.prenom}
+                {other?.nom || ''} {other?.prenom || ''}
+                {other?.utilisateur?.email && (
+                  <span style={{ color: 'var(--gray-400)', fontSize: 'var(--text-xs)', marginLeft: 6 }}>
+                    ({other.utilisateur.email})
+                  </span>
+                )}
               </div>
               <span style={{ color: 'var(--gray-400)', fontSize: 'var(--text-sm)' }}>
                 {formatDate(selectedMessage.date || selectedMessage.createdAt)}
@@ -190,7 +197,8 @@ export default function MessagesPage() {
             {selectedMessage.message}
           </div>
         </Modal>
-      )}
+        );
+      })()}
 
       <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Delete Message" message="Remove this message?" loading={deleteLoading} />
     </div>

@@ -154,9 +154,6 @@ export default function EmployeFormPage() {
           <h1>{isEdit ? 'Edit Employee' : 'Add Employee'}</h1>
           <p>{isEdit ? 'Update employee information.' : 'Create a new employee account and profile.'}</p>
         </div>
-        <div className="page-header-actions">
-          <button className="btn btn-outline" onClick={() => navigate(-1)}>Cancel</button>
-        </div>
       </div>
 
       <div className="card" style={{ maxWidth: 720 }}>
@@ -361,8 +358,8 @@ export default function EmployeFormPage() {
             </button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading
-                ? isEdit ? 'Updating...' : 'Creating...'
-                : isEdit ? 'Update Employee' : 'Create Employee'}
+                ? isEdit ? 'Saving...' : 'Creating...'
+                : isEdit ? 'Save' : 'Create Employee'}
             </button>
           </div>
         </form>

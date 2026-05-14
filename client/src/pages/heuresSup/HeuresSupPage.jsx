@@ -23,6 +23,9 @@ export default function HeuresSupPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ employeId: '', heureSupplementaire: '', date: '', description: '' });
   const [formLoading, setFormLoading] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [editForm, setEditForm] = useState({ employeId: '', heureSupplementaire: '', date: '', description: '' });
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -61,10 +64,33 @@ export default function HeuresSupPage() {
     finally { setFormLoading(false); }
   }
 
+  function openEdit(h) {
+    setEditTarget(h.id);
+    setEditForm({
+      employeId: h.employe?.id || h.employe?._id || h.employe || '',
+      heureSupplementaire: h.heureSupplementaire ?? '',
+      date: h.date ? new Date(h.date).toISOString().slice(0, 10) : '',
+      description: h.description || '',
+    });
+  }
+
+  async function handleEdit(e) {
+    e.preventDefault();
+    if (!editTarget) return;
+    setEditLoading(true);
+    try {
+      await heuresSupAPI.update(editTarget, editForm);
+      toast.success('Updated', 'Overtime updated.');
+      setEditTarget(null);
+      loadData();
+    } catch (err) { toast.error(err); }
+    finally { setEditLoading(false); }
+  }
+
   const filtered = data.filter((h) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    const emp = h.employe?.utilisateur;
+    const emp = h.employe;
     return `${emp?.nom || ''} ${emp?.prenom || ''}`.toLowerCase().includes(q);
   });
 
@@ -97,13 +123,16 @@ export default function HeuresSupPage() {
               </thead>
               <tbody>
                 {filtered.map((h) => {
-                  const emp = h.employe?.utilisateur;
+                  const emp = h.employe;
                   return (
                     <tr key={h.id}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div className="avatar avatar-sm">{(emp?.nom?.[0] || 'O').toUpperCase()}</div>
-                          <div><div style={{ fontWeight: 600 }}>{emp?.nom} {emp?.prenom}</div></div>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{emp?.nom} {emp?.prenom}</div>
+                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>{emp?.utilisateur?.email || ''}</div>
+                          </div>
                         </div>
                       </td>
                       <td>{formatDate(h.date)}</td>
@@ -111,8 +140,9 @@ export default function HeuresSupPage() {
                       <td>{h.description || '—'}</td>
                       <td>
                         <div className="table-actions">
-                          <RoleGuard roles={[ROLES.ADMIN , ROLES.RH]}>
-                            <button className="btn-icon danger" onClick={() => setDeleteTarget(h.id)}>🗑️</button>
+                          <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
+                            <button className="btn-icon" title="Edit" onClick={() => openEdit(h)}>✏️</button>
+                            <button className="btn-icon danger" title="Delete" onClick={() => setDeleteTarget(h.id)}>🗑️</button>
                           </RoleGuard>
                         </div>
                       </td>
@@ -127,7 +157,7 @@ export default function HeuresSupPage() {
 
       <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Delete Overtime" message="Remove this overtime record?" loading={deleteLoading} />
 
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Ajouter"
+      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Add Overtime"
         footer={<>
           <button className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSubmit} disabled={formLoading}>{formLoading ? 'Saving...' : 'Save'}</button>
@@ -153,6 +183,36 @@ export default function HeuresSupPage() {
           <div className="form-group">
             <label className="form-label">Description</label>
             <textarea className="form-textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title="Edit Overtime"
+        footer={<>
+          <button className="btn btn-outline" onClick={() => setEditTarget(null)}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleEdit} disabled={editLoading}>{editLoading ? 'Saving...' : 'Save'}</button>
+        </>}>
+        <form onSubmit={handleEdit}>
+          <div className="form-group">
+            <label className="form-label form-label-required">Employee</label>
+            <select className="form-select" value={editForm.employeId} onChange={(e) => setEditForm({ ...editForm, employeId: e.target.value })} required>
+              <option value="">Select employee...</option>
+              {employes.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>)}
+            </select>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label form-label-required">Date</label>
+              <input type="date" className="form-input" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label className="form-label form-label-required">Hours</label>
+              <input type="number" min="0" step="0.5" className="form-input" value={editForm.heureSupplementaire} onChange={(e) => setEditForm({ ...editForm, heureSupplementaire: e.target.value })} required />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea className="form-textarea" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
           </div>
         </form>
       </Modal>

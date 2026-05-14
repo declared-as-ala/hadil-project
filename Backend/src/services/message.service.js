@@ -1,6 +1,20 @@
 const Message = require('../models/Message.model');
 const ApiError = require('../utils/ApiError');
 
+// Populate sender + recipient with name fields from Employe and email from User.
+// (User schema has no nom/prenom — those live on Employe.)
+const PARTY_SELECT = 'nom prenom poste status';
+const USER_SELECT = 'email role';
+
+const POPULATE = [
+  { path: 'expediteur', select: PARTY_SELECT, populate: { path: 'utilisateur', select: USER_SELECT } },
+  { path: 'destinataire', select: PARTY_SELECT, populate: { path: 'utilisateur', select: USER_SELECT } },
+];
+
+const SENDER_POPULATE = [
+  { path: 'expediteur', select: PARTY_SELECT, populate: { path: 'utilisateur', select: USER_SELECT } },
+];
+
 class MessageService {
   async getAllMessages(filters = {}) {
     const query = {};
@@ -10,36 +24,16 @@ class MessageService {
     if (isValidId(filters.destinataireId)) query.destinataire = filters.destinataireId;
     if (filters.lu !== undefined) query.lu = filters.lu;
 
-    const messages = await Message.find(query)
-      .populate('expediteur', 'poste departement')
-      .populate('destinataire', 'poste departement')
-      .populate([
-        { path: 'expediteur', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-        { path: 'destinataire', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-      ])
-      .sort({ date: -1 });
-
-    return messages;
+    return Message.find(query).populate(POPULATE).sort({ date: -1 });
   }
 
   async getMessageById(id) {
-    const message = await Message.findById(id)
-      .populate('expediteur', 'poste departement')
-      .populate('destinataire', 'poste departement')
-      .populate([
-        { path: 'expediteur', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-        { path: 'destinataire', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-      ]);
-
-    if (!message) {
-      throw new ApiError(404, 'Message not found');
-    }
+    const message = await Message.findById(id).populate(POPULATE);
+    if (!message) throw new ApiError(404, 'Message not found');
     return message;
   }
 
   async createMessage(data) {
-    // Validate that expediteur and destinataire are not empty
-    // Use String() coercion so ObjectId values work as well as plain strings
     if (!data.expediteurId || !String(data.expediteurId).trim()) {
       throw new ApiError(400, 'Sender ID is required');
     }
@@ -47,47 +41,28 @@ class MessageService {
       throw new ApiError(400, 'Recipient ID is required');
     }
 
-    const message = new Message({
+    const message = await Message.create({
       expediteur: data.expediteurId,
       destinataire: data.destinataireId,
       message: data.message,
       date: data.date || new Date(),
     });
 
-    await message.save();
-
-    return Message.findById(message._id)
-      .populate('expediteur', 'poste departement')
-      .populate('destinataire', 'poste departement')
-      .populate([
-        { path: 'expediteur', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-        { path: 'destinataire', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-      ]);
+    return Message.findById(message._id).populate(POPULATE);
   }
 
   async updateMessage(id, data) {
     const message = await Message.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,
-    })
-      .populate('expediteur', 'poste departement')
-      .populate('destinataire', 'poste departement')
-      .populate([
-        { path: 'expediteur', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-        { path: 'destinataire', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-      ]);
-
-    if (!message) {
-      throw new ApiError(404, 'Message not found');
-    }
+    }).populate(POPULATE);
+    if (!message) throw new ApiError(404, 'Message not found');
     return message;
   }
 
   async deleteMessage(id) {
     const message = await Message.findByIdAndDelete(id);
-    if (!message) {
-      throw new ApiError(404, 'Message not found');
-    }
+    if (!message) throw new ApiError(404, 'Message not found');
     return { message: 'Message deleted successfully' };
   }
 
@@ -96,14 +71,9 @@ class MessageService {
   }
 
   async recevoirMessage(destinataireId) {
-    const messages = await Message.find({ destinataire: destinataireId, lu: false })
-      .populate('expediteur', 'poste departement')
-      .populate([
-        { path: 'expediteur', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-      ])
+    return Message.find({ destinataire: destinataireId, lu: false })
+      .populate(SENDER_POPULATE)
       .sort({ date: -1 });
-
-    return messages;
   }
 
   async markAsRead(messageId) {
@@ -111,17 +81,8 @@ class MessageService {
       messageId,
       { lu: true },
       { new: true, runValidators: true }
-    )
-      .populate('expediteur', 'poste departement')
-      .populate('destinataire', 'poste departement')
-      .populate([
-        { path: 'expediteur', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-        { path: 'destinataire', populate: { path: 'utilisateur', select: 'nom prenom email' } },
-      ]);
-
-    if (!message) {
-      throw new ApiError(404, 'Message not found');
-    }
+    ).populate(POPULATE);
+    if (!message) throw new ApiError(404, 'Message not found');
     return message;
   }
 }

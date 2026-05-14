@@ -548,7 +548,7 @@ function AdminView() {
                           <div className="lr-avatar">{initials}</div>
                           <div>
                             <div className="lr-employee-name">{emp?.nom} {emp?.prenom}</div>
-                            <div className="lr-employee-dept">{req.employe?.departement || '—'}</div>
+                            <div className="lr-employee-dept">{emp?.utilisateur?.email || '—'}</div>
                           </div>
                         </div>
                       </td>

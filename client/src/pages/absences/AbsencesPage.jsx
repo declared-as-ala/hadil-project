@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { absencesAPI } from '../../api/absences.api';
 import { employesAPI } from '../../api/employes.api';
 import { useApiToast } from '../../components/common/Toast';
+import { useAuth } from '../../hooks/useAuth';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import Modal from '../../components/common/Modal';
 import EmptyState from '../../components/common/EmptyState';
@@ -14,6 +14,9 @@ import '../CrudPage.css';
 
 export default function AbsencesPage() {
   const toast = useApiToast();
+  const { user, role } = useAuth();
+  const isAdmin = role === ROLES.ADMIN;
+  const isAdminOrRH = isAdmin || role === ROLES.RH;
   const [data, setData] = useState([]);
   const [employes, setEmployes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +26,9 @@ export default function AbsencesPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ employeId: '', date: '', nombre_des_heures: '', raison: '' });
   const [formLoading, setFormLoading] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [editForm, setEditForm] = useState({ employeId: '', date: '', nombre_des_heures: '', raison: '' });
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -31,9 +37,13 @@ export default function AbsencesPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [absRes, empRes] = await Promise.all([absencesAPI.getAll(), employesAPI.getAll()]);
-      setData(absRes.data || []);
-      setEmployes(empRes.data || []);
+      // Employees should only see their own absences. Admin/RH see everything.
+      const absParams = isAdminOrRH ? {} : (user?.employeeId ? { employeId: user.employeeId } : {});
+      const tasks = [absencesAPI.getAll(absParams)];
+      if (isAdminOrRH) tasks.push(employesAPI.getAll());
+      const results = await Promise.all(tasks);
+      setData(results[0].data || []);
+      if (isAdminOrRH) setEmployes(results[1].data || []);
     } catch (err) {
       toast.error(err);
     } finally {
@@ -69,6 +79,32 @@ export default function AbsencesPage() {
       toast.error(err);
     } finally {
       setFormLoading(false);
+    }
+  }
+
+  function openEdit(a) {
+    setEditTarget(a.id);
+    setEditForm({
+      employeId: a.employe?.id || a.employe?._id || a.employe || '',
+      date: a.date ? new Date(a.date).toISOString().slice(0, 10) : '',
+      nombre_des_heures: a.nombre_des_heures ?? '',
+      raison: a.raison || '',
+    });
+  }
+
+  async function handleEdit(e) {
+    e.preventDefault();
+    if (!editTarget) return;
+    setEditLoading(true);
+    try {
+      await absencesAPI.update(editTarget, editForm);
+      toast.success('Updated', 'Absence updated.');
+      setEditTarget(null);
+      loadData();
+    } catch (err) {
+      toast.error(err);
+    } finally {
+      setEditLoading(false);
     }
   }
 
@@ -144,7 +180,8 @@ export default function AbsencesPage() {
                       <td>
                         <div className="table-actions">
                           <RoleGuard roles={[ROLES.ADMIN]}>
-                            <button className="btn-icon danger" onClick={() => setDeleteTarget(a.id)}>
+                            <button className="btn-icon" title="Edit" onClick={() => openEdit(a)}>✏️</button>
+                            <button className="btn-icon danger" title="Delete" onClick={() => setDeleteTarget(a.id)}>
                               🗑️
                             </button>
                           </RoleGuard>
@@ -211,6 +248,53 @@ export default function AbsencesPage() {
           <div className="form-group">
             <label className="form-label">Reason</label>
             <textarea className="form-textarea" value={form.raison} onChange={(e) => setForm({ ...form, raison: e.target.value })} />
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        title="Edit Absence"
+        footer={
+          <>
+            <button className="btn btn-outline" onClick={() => setEditTarget(null)}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleEdit} disabled={editLoading}>
+              {editLoading ? 'Saving...' : 'Save'}
+            </button>
+          </>
+        }
+      >
+        <form onSubmit={handleEdit}>
+          <div className="form-group">
+            <label className="form-label form-label-required">Employee</label>
+            <select
+              className="form-select"
+              value={editForm.employeId}
+              onChange={(e) => setEditForm({ ...editForm, employeId: e.target.value })}
+              required
+            >
+              <option value="">Select employee...</option>
+              {employes.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.nom} {e.prenom}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label form-label-required">Date</label>
+              <input type="date" className="form-input" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label className="form-label form-label-required">Hours</label>
+              <input type="number" min="0" className="form-input" value={editForm.nombre_des_heures} onChange={(e) => setEditForm({ ...editForm, nombre_des_heures: e.target.value })} required />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Reason</label>
+            <textarea className="form-textarea" value={editForm.raison} onChange={(e) => setEditForm({ ...editForm, raison: e.target.value })} />
           </div>
         </form>
       </Modal>
