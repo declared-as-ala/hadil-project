@@ -72,6 +72,10 @@
     },
     "pendingRequests": "Demandes en attente",
     "absenceTrends": "Tendances d'absence",
+    "absencesByMonth": "Absences par mois",
+    "absencesFootnote": "Total des heures d'absence pour les 6 derniers mois.",
+    "outThisWeek": "Absents cette semaine",
+    "everyonePresent": "Tout le monde est présent.",
     "viewAll": "Tout voir"
   },
   "employes": {
