@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { employesAPI } from '../../api/employes.api';
 import { useApiToast } from '../../components/common/Toast';
 import Badge from '../../components/common/Badge';
@@ -12,6 +13,7 @@ import { ROLES } from '../../utils/constants';
 import '../CrudPage.css';
 
 export default function EmployesPage() {
+  const { t } = useTranslation();
   const toast = useApiToast();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,12 +70,12 @@ export default function EmployesPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Employees</h1>
-          <p>Manage your organization's employees.</p>
+          <h1>{t('employes.title')}</h1>
+          <p>{t('employes.subtitle')}</p>
         </div>
         <div className="page-header-actions">
           <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
-            <Link to="/employes/new" className="btn btn-primary">+ Add Employee</Link>
+            <Link to="/employes/new" className="btn btn-primary">{t('employes.add')}</Link>
           </RoleGuard>
         </div>
       </div>
@@ -84,7 +86,7 @@ export default function EmployesPage() {
             <input
               type="text"
               className="form-input"
-              placeholder="Search employees..."
+              placeholder={t('employes.search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: 260 }}
@@ -122,12 +124,12 @@ export default function EmployesPage() {
             <table>
               <thead>
                 <tr>
-                  <th>Employee</th>
-                  <th>Position</th>
-                  <th>Department</th>
-                  <th>Hire Date</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th>{t('employes.columns.employee')}</th>
+                  <th>{t('employes.columns.position')}</th>
+                  <th>{t('employes.columns.department')}</th>
+                  <th>{t('employes.columns.hireDate')}</th>
+                  <th>{t('employes.columns.status')}</th>
+                  <th>{t('employes.columns.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -187,9 +189,9 @@ export default function EmployesPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Employee"
-        message="Are you sure you want to delete this employee? Their login account will also be removed. This action cannot be undone."
-        confirmLabel="Delete"
+        title={t('employes.delete.title')}
+        message={t('employes.delete.message')}
+        confirmLabel={t('common.delete')}
         confirmVariant="danger"
         loading={deleteLoading}
       />
@@ -197,15 +199,15 @@ export default function EmployesPage() {
       <Modal
         isOpen={!!viewEmp}
         onClose={() => setViewEmp(null)}
-        title="Employee Details"
+        title={t('employes.view.title')}
         size="lg"
         footer={
           <>
-            <button className="btn btn-outline" onClick={() => setViewEmp(null)}>Close</button>
+            <button className="btn btn-outline" onClick={() => setViewEmp(null)}>{t('common.close')}</button>
             <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
               {viewEmp && (
                 <Link to={`/employes/${viewEmp.id}/edit`} className="btn btn-primary">
-                  ✏️ Edit
+                  ✏️ {t('common.edit')}
                 </Link>
               )}
             </RoleGuard>

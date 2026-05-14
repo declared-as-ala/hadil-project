@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { heuresSupAPI } from '../../api/heuresSup.api';
 import { employesAPI } from '../../api/employes.api';
 import { useApiToast } from '../../components/common/Toast';
@@ -13,6 +14,7 @@ import { ROLES } from '../../utils/constants';
 import '../CrudPage.css';
 
 export default function HeuresSupPage() {
+  const { t } = useTranslation();
   const toast = useApiToast();
   const [data, setData] = useState([]);
   const [employes, setEmployes] = useState([]);
@@ -99,27 +101,27 @@ export default function HeuresSupPage() {
   return (
     <div>
       <div className="page-header">
-        <div><h1>Overtime Hours</h1><p>Track employee overtime hours.</p></div>
+        <div><h1>{t('heuresSup.title')}</h1><p>{t('heuresSup.subtitle')}</p></div>
         <div className="page-header-actions">
           <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Ajouter </button>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>{t('heuresSup.add')}</button>
           </RoleGuard>
         </div>
       </div>
 
       <div className="table-container">
         <div className="table-toolbar">
-          <input type="text" className="form-input" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 260 }} />
+          <input type="text" className="form-input" placeholder={t('common.search')} value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 260 }} />
           <span className="table-count">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</span>
         </div>
 
         {filtered.length === 0 ? (
-          <EmptyState icon="⏰" title="No overtime records" description="No overtime has been recorded." />
+          <EmptyState icon="⏰" title={t('heuresSup.empty')} description="" />
         ) : (
           <div className="table-wrapper">
             <table>
               <thead>
-                <tr><th>Employee</th><th>Date</th><th>Hours</th><th>Description</th><th>Actions</th></tr>
+                <tr><th>{t('heuresSup.columns.employee')}</th><th>{t('heuresSup.columns.date')}</th><th>{t('heuresSup.columns.hours')}</th><th>{t('heuresSup.columns.description')}</th><th>{t('heuresSup.columns.actions')}</th></tr>
               </thead>
               <tbody>
                 {filtered.map((h) => {
@@ -157,10 +159,10 @@ export default function HeuresSupPage() {
 
       <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Delete Overtime" message="Remove this overtime record?" loading={deleteLoading} />
 
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Add Overtime"
+      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={t('heuresSup.addModal')}
         footer={<>
-          <button className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSubmit} disabled={formLoading}>{formLoading ? 'Saving...' : 'Save'}</button>
+          <button className="btn btn-outline" onClick={() => setShowForm(false)}>{t('common.cancel')}</button>
+          <button className="btn btn-primary" onClick={handleSubmit} disabled={formLoading}>{formLoading ? t('common.saving') : t('common.save')}</button>
         </>}>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -187,10 +189,10 @@ export default function HeuresSupPage() {
         </form>
       </Modal>
 
-      <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title="Edit Overtime"
+      <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title={t('heuresSup.editModal')}
         footer={<>
-          <button className="btn btn-outline" onClick={() => setEditTarget(null)}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleEdit} disabled={editLoading}>{editLoading ? 'Saving...' : 'Save'}</button>
+          <button className="btn btn-outline" onClick={() => setEditTarget(null)}>{t('common.cancel')}</button>
+          <button className="btn btn-primary" onClick={handleEdit} disabled={editLoading}>{editLoading ? t('common.saving') : t('common.save')}</button>
         </>}>
         <form onSubmit={handleEdit}>
           <div className="form-group">

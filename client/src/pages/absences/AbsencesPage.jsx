@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { absencesAPI } from '../../api/absences.api';
 import { employesAPI } from '../../api/employes.api';
 import { useApiToast } from '../../components/common/Toast';
@@ -14,6 +15,7 @@ import '../CrudPage.css';
 
 export default function AbsencesPage() {
   const toast = useApiToast();
+  const { t } = useTranslation();
   const { user, role } = useAuth();
   const isAdmin = role === ROLES.ADMIN;
   const isAdminOrRH = isAdmin || role === ROLES.RH;
@@ -121,12 +123,12 @@ export default function AbsencesPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Absences</h1>
-          <p>Track employee absences.</p>
+          <h1>{t('absences.title')}</h1>
+          <p>{t('absences.subtitle')}</p>
         </div>
         <div className="page-header-actions">
           <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Add Absence</button>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>{t('absences.add')}</button>
           </RoleGuard>
         </div>
       </div>
@@ -136,7 +138,7 @@ export default function AbsencesPage() {
           <input
             type="text"
             className="form-input"
-            placeholder="Search absences..."
+            placeholder={t('absences.search')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: 260 }}
@@ -145,17 +147,17 @@ export default function AbsencesPage() {
         </div>
 
         {filtered.length === 0 ? (
-          <EmptyState icon="📅" title="No absences recorded" description="All employees are present!" />
+          <EmptyState icon="📅" title={t('absences.empty.title')} description={t('absences.empty.desc')} />
         ) : (
           <div className="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th>Employee</th>
-                  <th>Date</th>
-                  <th>Hours</th>
-                  <th>Reason</th>
-                  <th>Actions</th>
+                  <th>{t('absences.columns.employee')}</th>
+                  <th>{t('absences.columns.date')}</th>
+                  <th>{t('absences.columns.hours')}</th>
+                  <th>{t('absences.columns.reason')}</th>
+                  <th>{t('absences.columns.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -200,20 +202,20 @@ export default function AbsencesPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Absence"
-        message="Remove this absence record?"
+        title={t('absences.delete.title')}
+        message={t('absences.delete.message')}
         loading={deleteLoading}
       />
 
       <Modal
         isOpen={showForm}
         onClose={() => setShowForm(false)}
-        title="Add Absence"
+        title={t('absences.addModal')}
         footer={
           <>
-            <button className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
+            <button className="btn btn-outline" onClick={() => setShowForm(false)}>{t('common.cancel')}</button>
             <button className="btn btn-primary" onClick={handleSubmit} disabled={formLoading}>
-              {formLoading ? 'Saving...' : 'Save'}
+              {formLoading ? t('common.saving') : t('common.save')}
             </button>
           </>
         }
@@ -255,12 +257,12 @@ export default function AbsencesPage() {
       <Modal
         isOpen={!!editTarget}
         onClose={() => setEditTarget(null)}
-        title="Edit Absence"
+        title={t('absences.editModal')}
         footer={
           <>
-            <button className="btn btn-outline" onClick={() => setEditTarget(null)}>Cancel</button>
+            <button className="btn btn-outline" onClick={() => setEditTarget(null)}>{t('common.cancel')}</button>
             <button className="btn btn-primary" onClick={handleEdit} disabled={editLoading}>
-              {editLoading ? 'Saving...' : 'Save'}
+              {editLoading ? t('common.saving') : t('common.save')}
             </button>
           </>
         }

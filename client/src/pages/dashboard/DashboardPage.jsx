@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import StatCard from '../../components/common/StatCard';
 import { useApiToast } from '../../components/common/Toast';
 import { employesAPI } from '../../api/employes.api';
@@ -22,6 +23,7 @@ const generateChartPath = () => {
 
 export default function DashboardPage() {
   const { role } = useAuth();
+  const { t } = useTranslation();
   const toast = useApiToast();
   const [stats, setStats] = useState({
     employes: 0,
@@ -109,8 +111,8 @@ export default function DashboardPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Dashboard</h1>
-          <p>Welcome back! Here is an overview of your HR system.</p>
+          <h1>{t('dashboard.title')}</h1>
+          <p>{t('dashboard.welcome')}</p>
         </div>
       </div>
 
@@ -118,20 +120,20 @@ export default function DashboardPage() {
       <div className="stats-grid">
         {isAdminOrRH && (
           <>
-            <StatCard icon="purple" label="Total Employees" value={stats.employes} />
-            <StatCard icon="blue" label="Total Interns" value={stats.stagiaires} />
-            <StatCard icon="green" label="Active Projects" value={stats.projets} />
-            <StatCard icon="yellow" label="Active Contracts" value={stats.contrats} />
-            <StatCard icon="red" label="Total Absences" value={stats.absences} />
-            <StatCard icon="purple" label="Leave Requests" value={stats.conges} />
+            <StatCard icon="purple" label={t('dashboard.stats.employes')} value={stats.employes} />
+            <StatCard icon="blue" label={t('dashboard.stats.stagiaires')} value={stats.stagiaires} />
+            <StatCard icon="green" label={t('dashboard.stats.projets')} value={stats.projets} />
+            <StatCard icon="yellow" label={t('dashboard.stats.contrats')} value={stats.contrats} />
+            <StatCard icon="red" label={t('dashboard.stats.absences')} value={stats.absences} />
+            <StatCard icon="purple" label={t('dashboard.stats.conges')} value={stats.conges} />
           </>
         )}
         {(role === ROLES.EMPLOYE || role === ROLES.STAGIAIRE) && (
           <>
-            <StatCard icon="green" label="Active Projects" value={stats.projets} />
-            <StatCard icon="blue" label="Leave Requests" value={stats.conges} />
-            <StatCard icon="yellow" label="Requests & Claims" value={stats.demandes} />
-            <StatCard icon="red" label="Pending Requests" value={stats.demandesPending} />
+            <StatCard icon="green" label={t('dashboard.stats.projets')} value={stats.projets} />
+            <StatCard icon="blue" label={t('dashboard.stats.conges')} value={stats.conges} />
+            <StatCard icon="yellow" label={t('dashboard.stats.demandes')} value={stats.demandes} />
+            <StatCard icon="red" label={t('dashboard.stats.demandesPending')} value={stats.demandesPending} />
           </>
         )}
       </div>
@@ -143,9 +145,9 @@ export default function DashboardPage() {
           {isAdminOrRH && recentDemandes.length > 0 && (
             <div className="dashboard-card">
               <div className="card-header">
-                <h3 className="card-title">Pending Requests</h3>
+                <h3 className="card-title">{t('dashboard.pendingRequests')}</h3>
                 <Link to="/demandes" className="btn btn-ghost btn-sm" style={{background: 'rgba(255,255,255,0.5)', borderRadius: '10px'}}>
-                  View All
+                  {t('dashboard.viewAll')}
                 </Link>
               </div>
               <div className="dashboard-list">
@@ -169,9 +171,9 @@ export default function DashboardPage() {
           {isAdminOrRH && (
             <div className="dashboard-card">
               <div className="card-header">
-                <h3 className="card-title">Absence Trends</h3>
+                <h3 className="card-title">{t('dashboard.absenceTrends')}</h3>
                 <Link to="/absences" className="btn btn-ghost btn-sm" style={{background: 'rgba(255,255,255,0.5)', borderRadius: '10px'}}>
-                  View All
+                  {t('dashboard.viewAll')}
                 </Link>
               </div>
               

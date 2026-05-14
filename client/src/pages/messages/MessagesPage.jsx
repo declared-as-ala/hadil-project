@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { messagesAPI } from '../../api/messages.api';
 import { employesAPI } from '../../api/employes.api';
 import { useAuth } from '../../hooks/useAuth';
@@ -13,6 +14,7 @@ import './Messages.css';
 
 export default function MessagesPage() {
   const { user, refreshUser } = useAuth();
+  const { t } = useTranslation();
   const toast = useApiToast();
   const [messages, setMessages] = useState([]);
   const [employes, setEmployes] = useState([]);
@@ -93,22 +95,22 @@ export default function MessagesPage() {
   return (
     <div>
       <div className="page-header">
-        <div><h1>Messages</h1><p>Internal messaging between employees.</p></div>
+        <div><h1>{t('messages.title')}</h1><p>{t('messages.subtitle')}</p></div>
         <div className="page-header-actions">
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>✉️ New Message</button>
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>{t('messages.new')}</button>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="tabs">
         <button className={`tab ${view === 'inbox' ? 'active' : ''}`} onClick={() => setView('inbox')}>
-          Inbox {messages.filter((m) => !m.lu).length > 0 && (
+          {t('messages.tabs.inbox')} {messages.filter((m) => !m.lu).length > 0 && (
             <span style={{ background: 'var(--color-danger)', color: '#fff', borderRadius: 99, padding: '1px 7px', fontSize: 'var(--text-xs)', marginLeft: 6 }}>
               {messages.filter((m) => !m.lu).length}
             </span>
           )}
         </button>
-        <button className={`tab ${view === 'sent' ? 'active' : ''}`} onClick={() => setView('sent')}>Sent</button>
+        <button className={`tab ${view === 'sent' ? 'active' : ''}`} onClick={() => setView('sent')}>{t('messages.tabs.sent')}</button>
       </div>
 
       <div className="table-container">
@@ -134,7 +136,7 @@ export default function MessagesPage() {
                     </div>
                     <div className="message-preview">{msg.message}</div>
                     <div className="message-meta">
-                      {msg.lu ? <Badge variant="gray">Read</Badge> : <Badge variant="info">Unread</Badge>}
+                      {msg.lu ? <Badge variant="gray">{t('messages.read')}</Badge> : <Badge variant="info">{t('messages.unread')}</Badge>}
                     </div>
                   </div>
                   <button className="btn-icon danger" title="Delete" onClick={(e) => { e.stopPropagation(); setDeleteTarget(msg.id); }}>
@@ -180,7 +182,7 @@ export default function MessagesPage() {
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div>
-                <strong>{view === 'inbox' ? 'From: ' : 'To: '}</strong>
+                <strong>{view === 'inbox' ? t('messages.from') + ' ' : t('messages.to') + ' '}</strong>
                 {other?.nom || ''} {other?.prenom || ''}
                 {other?.utilisateur?.email && (
                   <span style={{ color: 'var(--gray-400)', fontSize: 'var(--text-xs)', marginLeft: 6 }}>
@@ -200,7 +202,7 @@ export default function MessagesPage() {
         );
       })()}
 
-      <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Delete Message" message="Remove this message?" loading={deleteLoading} />
+      <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title={t('messages.deleteTitle')} message={t('messages.deleteMsg')} loading={deleteLoading} />
     </div>
   );
 }

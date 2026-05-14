@@ -1,116 +1,46 @@
 import { useState, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './Sidebar.css';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../utils/constants';
 
+// Items are flat: `section` entries are headers; everything else is a link.
+// Each entry uses an i18n key so labels switch with the language.
 const menuItems = [
-  {
-    label: 'Dashboard',
-    path: '/dashboard',
-    icon: '📊',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
-  },
-  {
-    section: 'HR Management',
-    roles: [ROLES.ADMIN, ROLES.RH],
-  },
-  {
-    label: 'Employees',
-    path: '/employes',
-    icon: '👥',
-    roles: [ROLES.ADMIN, ROLES.RH],
-  },
-  {
-    label: 'Absences',
-    path: '/absences',
-    icon: '📓',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    label: 'Demande Congés',
-    path: '/conges',
-    icon: '🏖️',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    label: 'Demandes Docs',
-    path: '/documents-admin',
-    icon: '📂',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    label: 'Heures Sup',
-    path: '/heures-sup',
-    icon: '⏰',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    label: 'Gestion Paie',
-    path: '/paie',
-    icon: '💰',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    label: 'AI CV Analyzer',
-    path: '/hr/cv-ai',
-    icon: '🤖',
-    roles: [ROLES.ADMIN, ROLES.RH],
-  },
-  {
-    section: 'Communication',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
-  },
-  {
-    label: 'Messages',
-    path: '/messages',
-    icon: '💬',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
-  },
-  {
-    section: 'Projects',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    label: 'Projects',
-    path: '/projets',
-    icon: '🚀',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE],
-  },
-  {
-    section: 'Administration',
-    roles: [ROLES.ADMIN],
-  },
-  {
-    label: 'Admin ',
-    path: '/admin',
-    icon: '⚙️',
-    roles: [ROLES.ADMIN],
-  },
-  {
-    section: 'Account',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
-  },
-  {
-    label: 'Profile',
-    path: '/profile',
-    icon: '👤',
-    roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE],
-  },
+  { key: 'dashboard', path: '/dashboard', icon: '📊', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
+  { section: 'hr', roles: [ROLES.ADMIN, ROLES.RH] },
+  { key: 'employes', path: '/employes', icon: '👥', roles: [ROLES.ADMIN, ROLES.RH] },
+  { key: 'absences', path: '/absences', icon: '📓', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
+  { key: 'conges', path: '/conges', icon: '🏖️', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
+  { key: 'documents', path: '/documents-admin', icon: '📂', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
+  { key: 'heuresSup', path: '/heures-sup', icon: '⏰', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
+  { key: 'paie', path: '/paie', icon: '💰', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
+  { key: 'cvAi', path: '/hr/cv-ai', icon: '🤖', roles: [ROLES.ADMIN, ROLES.RH] },
+  { section: 'communication', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
+  { key: 'messages', path: '/messages', icon: '💬', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
+  { section: 'projects', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
+  { key: 'projets', path: '/projets', icon: '🚀', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
+  { section: 'administration', roles: [ROLES.ADMIN] },
+  { key: 'admin', path: '/admin', icon: '⚙️', roles: [ROLES.ADMIN] },
+  { section: 'account', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
+  { key: 'profile', path: '/profile', icon: '👤', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
 ];
 
 export default function Sidebar({ collapsed = false, onToggleCollapse = () => {} }) {
   const { role } = useAuth();
+  const { t } = useTranslation();
   const [filter, setFilter] = useState('');
+
+  const labelFor = (item) =>
+    item.section ? t(`sidebar.sections.${item.section}`) : t(`sidebar.links.${item.key}`);
 
   const visibleItems = useMemo(
     () => menuItems.filter((item) => item.roles.includes(role)),
     [role]
   );
 
-  // Filter by label. Drop section headers that end up with no matching links
-  // beneath them (sections are flat in `menuItems`, so we scan forward to the
-  // next section to decide).
+  // Filter by translated label. Drop section headers with no matching links.
   const filteredItems = useMemo(() => {
     const q = filter.trim().toLowerCase();
     if (!q) return visibleItems;
@@ -121,25 +51,26 @@ export default function Sidebar({ collapsed = false, onToggleCollapse = () => {}
       if (item.section) {
         let hasMatch = false;
         for (let j = i + 1; j < visibleItems.length && !visibleItems[j].section; j += 1) {
-          if (visibleItems[j].label?.toLowerCase().includes(q)) {
+          if (labelFor(visibleItems[j]).toLowerCase().includes(q)) {
             hasMatch = true;
             break;
           }
         }
         if (hasMatch) result.push(item);
-      } else if (item.label?.toLowerCase().includes(q)) {
+      } else if (labelFor(item).toLowerCase().includes(q)) {
         result.push(item);
       }
     }
     return result;
-  }, [visibleItems, filter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleItems, filter, t]);
 
   return (
     <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <span className="sidebar-logo-icon">🏢</span>
-          {!collapsed && <span className="sidebar-logo-text">HR System</span>}
+          {!collapsed && <span className="sidebar-logo-text">{t('sidebar.logo')}</span>}
         </div>
         <button
           className="sidebar-toggle"
@@ -157,16 +88,16 @@ export default function Sidebar({ collapsed = false, onToggleCollapse = () => {}
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter menu..."
+            placeholder={t('sidebar.filterPlaceholder')}
             className="sidebar-search-input"
-            aria-label="Filter menu"
+            aria-label={t('sidebar.filterPlaceholder')}
           />
           {filter && (
             <button
               type="button"
               className="sidebar-search-clear"
               onClick={() => setFilter('')}
-              title="Clear filter"
+              title={t('common.cancel')}
             >
               ×
             </button>
@@ -180,11 +111,12 @@ export default function Sidebar({ collapsed = false, onToggleCollapse = () => {}
             return (
               !collapsed && (
                 <div key={`section-${idx}`} className="sidebar-section-label">
-                  {item.section}
+                  {labelFor(item)}
                 </div>
               )
             );
           }
+          const label = labelFor(item);
           return (
             <NavLink
               key={item.path}
@@ -192,15 +124,15 @@ export default function Sidebar({ collapsed = false, onToggleCollapse = () => {}
               className={({ isActive }) =>
                 `sidebar-link ${isActive ? 'sidebar-link-active' : ''}`
               }
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? label : undefined}
             >
               <span className="sidebar-link-icon">{item.icon}</span>
-              {!collapsed && <span className="sidebar-link-label">{item.label}</span>}
+              {!collapsed && <span className="sidebar-link-label">{label}</span>}
             </NavLink>
           );
         })}
         {filter && filteredItems.length === 0 && !collapsed && (
-          <div className="sidebar-empty">No matches</div>
+          <div className="sidebar-empty">{t('sidebar.noMatches')}</div>
         )}
       </nav>
     </aside>

@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
-import { ROLE_LABELS } from '../../utils/constants';
+import LanguageSwitcher from './LanguageSwitcher';
 import './TopNav.css';
 
 export default function TopNav({ onMenuToggle }) {
   const { user, logout, role } = useAuth();
+  const { t } = useTranslation();
 
   const handleLogout = () => {
     logout();
@@ -14,6 +16,8 @@ export default function TopNav({ onMenuToggle }) {
     ? `${user.nom || user.fullName || ''} ${user.prenom || ''}`.trim() || user.email
     : user?.email || 'User';
 
+  const roleLabel = role ? t(`roles.${role}`, { defaultValue: role }) : '';
+
   return (
     <header className="topnav">
       <div className="topnav-left">
@@ -22,29 +26,30 @@ export default function TopNav({ onMenuToggle }) {
         </button>
       </div>
       <div className="topnav-right">
+        <LanguageSwitcher />
         <div className="topnav-user">
           <div className="topnav-user-info">
             <span className="topnav-user-name">{userName}</span>
-            <span className="topnav-user-role">{ROLE_LABELS[role] || role}</span>
+            <span className="topnav-user-role">{roleLabel}</span>
           </div>
           <Link
             to="/profile"
             className="topnav-avatar"
-            title="View my profile"
+            title={t('topnav.profile')}
             style={{ textDecoration: 'none', cursor: 'pointer', overflow: 'hidden' }}
           >
             {user?.avatar ? (
-              <img 
-                src={user.avatar} 
-                alt="Avatar" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              <img
+                src={user.avatar}
+                alt="Avatar"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             ) : (
               user?.nom?.[0]?.toUpperCase() || user?.fullName?.[0]?.toUpperCase() || 'U'
             )}
           </Link>
-          <button className="btn btn-ghost btn-sm topnav-logout" onClick={handleLogout}>
-            Logout
+          <button className="btn btn-ghost btn-sm topnav-logout" onClick={handleLogout} title={t('topnav.logout')}>
+            ⎋
           </button>
         </div>
       </div>
