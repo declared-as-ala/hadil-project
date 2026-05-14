@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import './Sidebar.css';
 import { useAuth } from '../../hooks/useAuth';
@@ -133,9 +132,8 @@ const menuItems = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ collapsed = false, onToggleCollapse = () => {} }) {
   const { role } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
 
   const canSee = (item) => {
     if (item.section) {
@@ -155,7 +153,7 @@ export default function Sidebar() {
         </div>
         <button
           className="sidebar-toggle"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={onToggleCollapse}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? '\u25B6\uFE0F' : '\u25C0\uFE0F'}

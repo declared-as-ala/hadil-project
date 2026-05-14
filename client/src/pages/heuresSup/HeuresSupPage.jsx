@@ -127,11 +127,11 @@ export default function HeuresSupPage() {
                   return (
                     <tr key={h.id}>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div className="employee-cell">
                           <div className="avatar avatar-sm">{(emp?.nom?.[0] || 'O').toUpperCase()}</div>
                           <div>
-                            <div style={{ fontWeight: 600 }}>{emp?.nom} {emp?.prenom}</div>
-                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>{emp?.utilisateur?.email || ''}</div>
+                            <div className="employee-name">{emp?.nom} {emp?.prenom}</div>
+                            <div className="employee-sub">{emp?.utilisateur?.email || ''}</div>
                           </div>
                         </div>
                       </td>

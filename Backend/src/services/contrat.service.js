@@ -1,6 +1,12 @@
 const Contrat = require('../models/Contrat.model');
 const ApiError = require('../utils/ApiError');
 
+const EMPLOYE_POPULATE = {
+  path: 'employe',
+  select: 'nom prenom poste status',
+  populate: { path: 'utilisateur', select: 'email role' },
+};
+
 class ContratService {
   async getAllContrats(filters = {}) {
     const query = {};
@@ -8,28 +14,14 @@ class ContratService {
     if (filters.type) query.type = filters.type;
     if (filters.status) query.status = filters.status;
 
-    const contrats = await Contrat.find(query)
-      .populate('employe', 'poste departement status')
-      .populate({
-        path: 'employe',
-        populate: { path: 'utilisateur', select: 'nom prenom email' },
-      })
+    return Contrat.find(query)
+      .populate(EMPLOYE_POPULATE)
       .sort({ date_de_debut: -1 });
-
-    return contrats;
   }
 
   async getContratById(id) {
-    const contrat = await Contrat.findById(id)
-      .populate('employe', 'poste departement status')
-      .populate({
-        path: 'employe',
-        populate: { path: 'utilisateur', select: 'nom prenom email' },
-      });
-
-    if (!contrat) {
-      throw new ApiError(404, 'Contrat not found');
-    }
+    const contrat = await Contrat.findById(id).populate(EMPLOYE_POPULATE);
+    if (!contrat) throw new ApiError(404, 'Contrat not found');
     return contrat;
   }
 
@@ -45,72 +37,46 @@ class ContratService {
       status: 'actif',
     };
 
-    // Only set date_de_fin for CDD contracts
     if (data.type === 'CDD' && data.date_de_fin) {
       contratData.date_de_fin = data.date_de_fin;
     }
 
-    const contrat = new Contrat(contratData);
-    await contrat.save();
-
-    return Contrat.findById(contrat._id)
-      .populate('employe', 'poste departement status')
-      .populate({
-        path: 'employe',
-        populate: { path: 'utilisateur', select: 'nom prenom email' },
-      });
+    const contrat = await Contrat.create(contratData);
+    return Contrat.findById(contrat._id).populate(EMPLOYE_POPULATE);
   }
 
   async updateContrat(id, data) {
-    const contrat = await Contrat.findByIdAndUpdate(id, data, {
+    const payload = { ...data };
+    if (data.employeId) {
+      payload.employe = data.employeId;
+      delete payload.employeId;
+    }
+    const contrat = await Contrat.findByIdAndUpdate(id, payload, {
       new: true,
       runValidators: true,
-    })
-      .populate('employe', 'poste departement status')
-      .populate({
-        path: 'employe',
-        populate: { path: 'utilisateur', select: 'nom prenom email' },
-      });
+    }).populate(EMPLOYE_POPULATE);
 
-    if (!contrat) {
-      throw new ApiError(404, 'Contrat not found');
-    }
+    if (!contrat) throw new ApiError(404, 'Contrat not found');
     return contrat;
   }
 
   async deleteContrat(id) {
     const contrat = await Contrat.findByIdAndDelete(id);
-    if (!contrat) {
-      throw new ApiError(404, 'Contrat not found');
-    }
+    if (!contrat) throw new ApiError(404, 'Contrat not found');
     return { message: 'Contrat deleted successfully' };
   }
 
   async renouvelerContrat(id, notes) {
     const contrat = await Contrat.findById(id);
-    if (!contrat) {
-      throw new ApiError(404, 'Contrat not found');
-    }
-
+    if (!contrat) throw new ApiError(404, 'Contrat not found');
     await contrat.renouveler(notes);
-
-    return Contrat.findById(contrat._id)
-      .populate('employe', 'poste departement status')
-      .populate({
-        path: 'employe',
-        populate: { path: 'utilisateur', select: 'nom prenom email' },
-      });
+    return Contrat.findById(contrat._id).populate(EMPLOYE_POPULATE);
   }
 
   async getContratsByEmploye(employeId) {
-    const contrats = await Contrat.find({ employe: employeId })
+    return Contrat.find({ employe: employeId })
       .sort({ date_de_debut: -1 })
-      .populate({
-        path: 'employe',
-        populate: { path: 'utilisateur', select: 'nom prenom email' },
-      });
-
-    return contrats;
+      .populate(EMPLOYE_POPULATE);
   }
 }
 

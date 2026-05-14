@@ -5,6 +5,7 @@ import { useApiToast } from '../../components/common/Toast';
 import Badge from '../../components/common/Badge';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import EmptyState from '../../components/common/EmptyState';
+import Modal from '../../components/common/Modal';
 import { formatDate, formatLabel } from '../../utils/formatters';
 import RoleGuard from '../../components/common/RoleGuard';
 import { ROLES } from '../../utils/constants';
@@ -18,6 +19,7 @@ export default function EmployesPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [viewEmp, setViewEmp] = useState(null);
 
   useEffect(() => {
     loadEmployes();
@@ -135,17 +137,13 @@ export default function EmployesPage() {
                   return (
                     <tr key={emp.id}>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div className="employee-cell">
                           <div className="avatar avatar-sm">
                             {(emp.nom?.[0] || 'E').toUpperCase()}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 600, color: 'var(--gray-900)' }}>
-                              {emp.nom} {emp.prenom}
-                            </div>
-                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>
-                              {emp.utilisateur?.email}
-                            </div>
+                            <div className="employee-name">{emp.nom} {emp.prenom}</div>
+                            <div className="employee-sub">{emp.utilisateur?.email}</div>
                           </div>
                         </div>
                       </td>
@@ -157,9 +155,9 @@ export default function EmployesPage() {
                       </td>
                       <td>
                         <div className="table-actions">
-                          <Link to={`/employes/${emp.id}`} className="btn-icon" title="View">
+                          <button className="btn-icon" title="View" onClick={() => setViewEmp(emp)}>
                             👁️
-                          </Link>
+                          </button>
                           <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
                             <Link to={`/employes/${emp.id}/edit`} className="btn-icon" title="Edit">
                               ✏️
@@ -195,6 +193,72 @@ export default function EmployesPage() {
         confirmVariant="danger"
         loading={deleteLoading}
       />
+
+      <Modal
+        isOpen={!!viewEmp}
+        onClose={() => setViewEmp(null)}
+        title="Employee Details"
+        size="lg"
+        footer={
+          <>
+            <button className="btn btn-outline" onClick={() => setViewEmp(null)}>Close</button>
+            <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
+              {viewEmp && (
+                <Link to={`/employes/${viewEmp.id}/edit`} className="btn btn-primary">
+                  ✏️ Edit
+                </Link>
+              )}
+            </RoleGuard>
+          </>
+        }
+      >
+        {viewEmp && (
+          <>
+            <div className="detail-header">
+              <div className="avatar avatar-lg" style={{ borderRadius: 14, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
+                {(viewEmp.nom?.[0] || 'E').toUpperCase()}
+              </div>
+              <div className="detail-header-info">
+                <div className="detail-header-title">{viewEmp.nom} {viewEmp.prenom}</div>
+                <div className="detail-header-subtitle">{viewEmp.utilisateur?.email}</div>
+              </div>
+              <Badge variant={viewEmp.status === 'actif' ? 'success' : viewEmp.status === 'inactif' ? 'gray' : 'warning'}>
+                {formatLabel(viewEmp.status)}
+              </Badge>
+            </div>
+            <div className="detail-grid">
+              <div className="detail-field">
+                <div className="detail-field-label">Position</div>
+                <div className="detail-field-value">{viewEmp.poste || '—'}</div>
+              </div>
+              <div className="detail-field">
+                <div className="detail-field-label">Phone</div>
+                <div className="detail-field-value">{viewEmp.telephone || '—'}</div>
+              </div>
+              <div className="detail-field">
+                <div className="detail-field-label">Hire Date</div>
+                <div className="detail-field-value">{formatDate(viewEmp.dateEmbauche)}</div>
+              </div>
+              <div className="detail-field">
+                <div className="detail-field-label">Base Salary</div>
+                <div className="detail-field-value">
+                  {viewEmp.salaire_base != null ? `${Number(viewEmp.salaire_base).toLocaleString()} DA` : '—'}
+                </div>
+              </div>
+              <div className="detail-field">
+                <div className="detail-field-label">Overtime Rate</div>
+                <div className="detail-field-value">
+                  {viewEmp.prix_heure_sup != null ? `${Number(viewEmp.prix_heure_sup).toLocaleString()} DA/hr` : '—'}
+                </div>
+              </div>
+              <div className="detail-field">
+                <div className="detail-field-label">Created</div>
+                <div className="detail-field-value">{formatDate(viewEmp.createdAt)}</div>
+              </div>
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

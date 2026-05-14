@@ -134,13 +134,17 @@ export default function ContratsPage() {
               </thead>
               <tbody>
                 {filtered.map((c) => {
-                  const emp = c.employe?.utilisateur;
+                  const emp = c.employe;
+                  const u = c.employe?.utilisateur;
                   return (
                     <tr key={c.id}>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div className="employee-cell">
                           <div className="avatar avatar-sm">{(emp?.nom?.[0] || 'C').toUpperCase()}</div>
-                          <div><div style={{ fontWeight: 600 }}>{emp?.nom} {emp?.prenom}</div></div>
+                          <div>
+                            <div className="employee-name">{emp?.nom} {emp?.prenom}</div>
+                            <div className="employee-sub">{u?.email || ''}</div>
+                          </div>
                         </div>
                       </td>
                       <td><Badge variant={c.type === 'CDI' ? 'success' : c.type === 'CDD' ? 'warning' : 'info'}>{c.type}</Badge></td>
