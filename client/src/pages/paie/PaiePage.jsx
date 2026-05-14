@@ -1,9 +1,11 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { paieAPI, postesAPI, affectationsAPI } from '../../api/paie.api';
+import { contratsAPI } from '../../api/contrats.api';
 import { employesAPI } from '../../api/employes.api';
 import { useApiToast } from '../../components/common/Toast';
 import { ROLES } from '../../utils/constants';
+import { formatDate } from '../../utils/formatters';
 import './PaiePage.css';
 
 const MOIS_LABELS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -31,6 +33,7 @@ function AdminPaieView() {
   const [postes, setPostes] = useState([]);
   const [affectations, setAffectations] = useState([]);
   const [employes, setEmployes] = useState([]);
+  const [contrats, setContrats] = useState([]);
 
   const [showPosteForm, setShowPosteForm] = useState(false);
   const [posteForm, setPosteForm] = useState({ nom_poste: '', salaire_base: '', prix_heure_sup: '' });
@@ -59,11 +62,36 @@ function AdminPaieView() {
     } catch (e) { toast.error(e); } finally { setLoading(false); }
   }, []);
 
+  const loadContrats = useCallback(async () => {
+    setLoading(true);
+    try { const r = await contratsAPI.getAll(); setContrats(r.data || []); }
+    catch (e) { toast.error(e); } finally { setLoading(false); }
+  }, []);
+
   useEffect(() => {
     if (tab === 'paies') loadPaies();
     else if (tab === 'postes') loadPostes();
     else if (tab === 'affectations') loadAffectations();
-  }, [tab, loadPaies, loadPostes, loadAffectations]);
+    else if (tab === 'contrats') loadContrats();
+  }, [tab, loadPaies, loadPostes, loadAffectations, loadContrats]);
+
+  async function handleRenewContrat(id) {
+    if (!window.confirm('Renouveler ce contrat ?')) return;
+    try {
+      await contratsAPI.renouveler(id, '');
+      toast.success('Contrat renouvelé');
+      loadContrats();
+    } catch (e) { toast.error(e); }
+  }
+
+  async function handleDeleteContrat(id) {
+    if (!window.confirm('Supprimer ce contrat ?')) return;
+    try {
+      await contratsAPI.delete(id);
+      toast.success('Contrat supprimé');
+      loadContrats();
+    } catch (e) { toast.error(e); }
+  }
 
   // ── Sync from existing employees ──────────────────
   async function handleSync() {
@@ -138,7 +166,7 @@ function AdminPaieView() {
 
       {/* Tabs */}
       <div className="paie-tabs">
-        {[['paies','💰 Fiches de paie'],['postes','🏷️ Postes'],['affectations','🔗 Affectations']].map(([k,l]) => (
+        {[['paies','💰 Fiches de paie'],['postes','🏷️ Postes'],['affectations','🔗 Affectations'],['contrats','📄 Contrats']].map(([k,l]) => (
           <button key={k} className={`paie-tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
@@ -393,6 +421,78 @@ function AdminPaieView() {
                       <td>{new Date(a.date_debut).toLocaleDateString('fr-FR')}</td>
                       <td><span className="paie-badge" style={{background:isActive?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)',color:isActive?'#059669':'#ef4444'}}>{isActive?'✅ Actif':'⛔ Terminé'}</span></td>
                       <td><button onClick={() => handleDeleteAffectation(a.id)} style={{fontSize:'0.75rem',padding:'0.3rem 0.7rem',borderRadius:'6px',border:'none',background:'#ef4444',color:'#fff',cursor:'pointer'}}>🗑️</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>}
+
+      {/* ── TAB: Contrats (mirrored from active Affectations) ───────── */}
+      {tab === 'contrats' && <div className="paie-section">
+        <div className="paie-section-header">
+          <h2>📄 Contrats</h2>
+          <span style={{fontSize:'0.85rem',color:'var(--gray-500)'}}>
+            Contrats créés et synchronisés automatiquement avec les affectations actives.
+          </span>
+        </div>
+
+        <div style={{background:'rgba(99,102,241,0.06)',border:'1.5px solid rgba(99,102,241,0.2)',borderRadius:'10px',padding:'0.75rem 1rem',marginBottom:'1rem',fontSize:'0.85rem',color:'var(--gray-600)'}}>
+          💡 Chaque affectation crée un contrat actif. Modifier le poste d'un employé via <strong>Affectations</strong> ferme l'ancien contrat et en crée un nouveau avec le poste et salaire à jour.
+        </div>
+
+        {loading ? <div className="paie-loading"><div className="spinner"/></div>
+        : contrats.length === 0 ? (
+          <div className="paie-empty">
+            <div className="paie-empty-icon">📄</div>
+            <h3>Aucun contrat</h3>
+            <p>Créez une affectation pour générer un contrat automatiquement.</p>
+          </div>
+        ) : (
+          <div className="paie-table-container">
+            <div className="paie-table-header"><h2>Contrats</h2><span>{contrats.length} contrat(s)</span></div>
+            <table className="paie-table">
+              <thead><tr><th>Employé</th><th>Type</th><th>Poste</th><th>Salaire</th><th>Début</th><th>Fin</th><th>Statut</th><th>Actions</th></tr></thead>
+              <tbody>
+                {contrats.map(c => {
+                  const emp = c.employe;
+                  const isActive = c.status === 'actif';
+                  return (
+                    <tr key={c.id}>
+                      <td>
+                        <div className="paie-employee-cell">
+                          <div className="paie-avatar">{(emp?.nom?.[0]||'?').toUpperCase()}</div>
+                          <div>
+                            <div className="paie-employee-name">{emp?.prenom} {emp?.nom}</div>
+                            <div className="paie-employee-email">{emp?.utilisateur?.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span className="paie-badge">{c.type}</span></td>
+                      <td>{c.posteTravail || '—'}</td>
+                      <td>{c.salaire != null ? `${Number(c.salaire).toFixed(2)} DT` : '—'}</td>
+                      <td>{formatDate(c.date_de_debut)}</td>
+                      <td>{c.type === 'CDD' ? formatDate(c.date_de_fin) : <span style={{color:'var(--gray-400)'}}>—</span>}</td>
+                      <td>
+                        <span className="paie-badge" style={{background:isActive?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)',color:isActive?'#059669':'#ef4444'}}>
+                          {isActive ? '✅ Actif' : c.status}
+                        </span>
+                      </td>
+                      <td style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
+                        <button
+                          onClick={() => handleRenewContrat(c.id)}
+                          disabled={!isActive}
+                          style={{fontSize:'0.75rem',padding:'0.3rem 0.7rem',borderRadius:'6px',border:'none',background:isActive?'#7c3aed':'#d1d5db',color:'#fff',cursor:isActive?'pointer':'not-allowed'}}
+                          title="Renouveler le contrat"
+                        >🔄 Renouveler</button>
+                        <button
+                          onClick={() => handleDeleteContrat(c.id)}
+                          style={{fontSize:'0.75rem',padding:'0.3rem 0.7rem',borderRadius:'6px',border:'none',background:'#ef4444',color:'#fff',cursor:'pointer'}}
+                          title="Supprimer le contrat"
+                        >🗑️</button>
+                      </td>
                     </tr>
                   );
                 })}

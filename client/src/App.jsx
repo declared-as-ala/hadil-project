@@ -23,7 +23,6 @@ import MessagesPage from './pages/messages/MessagesPage';
 import ProjetsPage from './pages/projets/ProjetsPage';
 import TachesPage from './pages/taches/TachesPage';
 import ReunionsPage from './pages/reunions/ReunionsPage';
-import ContratsPage from './pages/contrats/ContratsPage';
 import AdminPage from './pages/admin/AdminPage';
 import DocumentsAdminPage from './pages/documentsAdmin/DocumentsAdminPage';
 import PaiePage from './pages/paie/PaiePage';
@@ -218,17 +217,8 @@ export default function App() {
               }
             />
 
-            {/* Contrats */}
-            <Route
-              path="/contrats"
-              element={
-                <LayoutPage>
-                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH]}>
-                    <ContratsPage />
-                  </RequireAuth>
-                </LayoutPage>
-              }
-            />
+            {/* Contracts now live as a tab inside /paie */}
+            <Route path="/contrats" element={<Navigate to="/paie" replace />} />
 
             {/* Profile */}
             <Route
