@@ -7,23 +7,17 @@ import { ROLES } from './utils/constants';
 
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
-import SignupPage from './pages/auth/SignupPage';
 
 // Pages
 import DashboardPage from './pages/dashboard/DashboardPage';
 import EmployesPage from './pages/employes/EmployesPage';
 import EmployeDetailPage from './pages/employes/EmployeDetailPage';
 import EmployeFormPage from './pages/employes/EmployeFormPage';
-import StagiairesPage from './pages/stagiaires/StagiairesPage';
 import AbsencesPage from './pages/absences/AbsencesPage';
 import CongesPage from './pages/conges/CongesPage';
 import HeuresSupPage from './pages/heuresSup/HeuresSupPage';
-import DemandesPage from './pages/demandes/DemandesPage';
 import MessagesPage from './pages/messages/MessagesPage';
-import ProjetsPage from './pages/projets/ProjetsPage';
-import TachesPage from './pages/taches/TachesPage';
-import ReunionsPage from './pages/reunions/ReunionsPage';
-import AdminPage from './pages/admin/AdminPage';
+
 import DocumentsAdminPage from './pages/documentsAdmin/DocumentsAdminPage';
 import PaiePage from './pages/paie/PaiePage';
 import ProfilePage from './pages/profile/Profile';
@@ -54,7 +48,7 @@ export default function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/signup" element={<Navigate to="/login" replace />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
             {/* Protected Routes */}
@@ -109,17 +103,6 @@ export default function App() {
               }
             />
 
-            {/* Stagiaires */}
-            <Route
-              path="/stagiaires"
-              element={
-                <LayoutPage>
-                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH]}>
-                    <StagiairesPage />
-                  </RequireAuth>
-                </LayoutPage>
-              }
-            />
 
             {/* Absences */}
             <Route
@@ -157,68 +140,22 @@ export default function App() {
               }
             />
 
-            {/* Demandes */}
-            <Route
-              path="/demandes"
-              element={
-                <LayoutPage>
-                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE]}>
-                    <DemandesPage />
-                  </RequireAuth>
-                </LayoutPage>
-              }
-            />
+
 
             {/* Messages */}
             <Route
               path="/messages"
               element={
                 <LayoutPage>
-                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE]}>
+                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE]}>
                     <MessagesPage />
                   </RequireAuth>
                 </LayoutPage>
               }
             />
 
-            {/* Projets */}
-            <Route
-              path="/projets"
-              element={
-                <LayoutPage>
-                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE]}>
-                    <ProjetsPage />
-                  </RequireAuth>
-                </LayoutPage>
-              }
-            />
 
-            {/* Taches */}
-            <Route
-              path="/taches"
-              element={
-                <LayoutPage>
-                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE]}>
-                    <TachesPage />
-                  </RequireAuth>
-                </LayoutPage>
-              }
-            />
 
-            {/* Reunions */}
-            <Route
-              path="/reunions"
-              element={
-                <LayoutPage>
-                  <RequireAuth roles={[ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE]}>
-                    <ReunionsPage />
-                  </RequireAuth>
-                </LayoutPage>
-              }
-            />
-
-            {/* Contracts now live as a tab inside /paie */}
-            <Route path="/contrats" element={<Navigate to="/paie" replace />} />
 
             {/* Profile */}
             <Route
@@ -296,17 +233,7 @@ export default function App() {
               }
             />
 
-            {/* Admin */}
-            <Route
-              path="/admin"
-              element={
-                <LayoutPage>
-                  <RequireAuth roles={[ROLES.ADMIN]}>
-                    <AdminPage />
-                  </RequireAuth>
-                </LayoutPage>
-              }
-            />
+
 
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/login" replace />} />

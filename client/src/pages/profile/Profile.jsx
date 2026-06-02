@@ -21,10 +21,10 @@ function getPasswordStrength(pw) {
   if (/[A-Z]/.test(pw)) score++;
   if (/[0-9]/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
-  if (score <= 1) return { label: 'Weak',   pct: 25,  cls: 'strength-weak'   };
-  if (score === 2) return { label: 'Fair',   pct: 50,  cls: 'strength-fair'   };
-  if (score === 3) return { label: 'Good',   pct: 75,  cls: 'strength-good'   };
-  return              { label: 'Strong', pct: 100, cls: 'strength-strong' };
+  if (score <= 1) return { label: 'Faible',   pct: 25,  cls: 'strength-weak'   };
+  if (score === 2) return { label: 'Moyen',   pct: 50,  cls: 'strength-fair'   };
+  if (score === 3) return { label: 'Bon',   pct: 75,  cls: 'strength-good'   };
+  return              { label: 'Fort', pct: 100, cls: 'strength-strong' };
 }
 
 function validateEmail(email) {
@@ -40,7 +40,7 @@ function FormField({ id, label, icon, required, optional, error, children }) {
         {required && <span className="required">*</span>}
         {optional && (
           <span style={{ fontWeight: 400, color: 'var(--gray-400)', marginLeft: 6, fontSize: '0.78rem' }}>
-            (optional)
+            (optionnel)
           </span>
         )}
       </label>
@@ -99,7 +99,7 @@ export default function ProfilePage() {
         }
       } catch (err) {
         if (!cancelled)
-          setAlert({ type: 'error', msg: err.message || 'Failed to load profile.' });
+          setAlert({ type: 'error', msg: err.message || 'Impossible de charger le profil.' });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -112,12 +112,12 @@ export default function ProfilePage() {
   /* ── validate info ── */
   function validateInfo() {
     const errs = {};
-    if (!fullName.trim()) errs.fullName = 'Full name is required.';
-    if (!email.trim())    errs.email    = 'Email is required.';
-    else if (!validateEmail(email)) errs.email = 'Enter a valid email address.';
+    if (!fullName.trim()) errs.fullName = 'Le nom complet est obligatoire.';
+    if (!email.trim())    errs.email    = 'L\'adresse e-mail est obligatoire.';
+    else if (!validateEmail(email)) errs.email = 'Entrez une adresse e-mail valide.';
     // Matricule must be exactly 8 digits if provided
     if (matricule.trim() !== '' && !/^\d{8}$/.test(matricule.trim())) {
-      errs.matricule = 'User ID must be exactly 8 digits (numbers only).';
+      errs.matricule = 'L\'ID utilisateur doit comporter exactement 8 chiffres.';
     }
     setInfoErrors(errs);
     return Object.keys(errs).length === 0;
@@ -126,10 +126,10 @@ export default function ProfilePage() {
   /* ── validate password ── */
   function validatePassword() {
     const errs = {};
-    if (!newPwd) errs.newPwd = 'New password is required.';
-    else if (newPwd.length < 8) errs.newPwd = 'Password must be at least 8 characters.';
-    if (!confirmPwd) errs.confirmPwd = 'Please confirm your password.';
-    else if (newPwd !== confirmPwd) errs.confirmPwd = 'Passwords do not match.';
+    if (!newPwd) errs.newPwd = 'Le nouveau mot de passe est obligatoire.';
+    else if (newPwd.length < 8) errs.newPwd = 'Le mot de passe doit contenir au moins 8 caractères.';
+    if (!confirmPwd) errs.confirmPwd = 'Veuillez confirmer votre mot de passe.';
+    else if (newPwd !== confirmPwd) errs.confirmPwd = 'Les mots de passe ne correspondent pas.';
     setPwdErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -155,9 +155,9 @@ export default function ProfilePage() {
       setMatricule(updated.matricule || '');
       setAvatar(updated.avatar || '');
       await refreshUser();
-      setAlert({ type: 'success', msg: 'Profile updated successfully!' });
+      setAlert({ type: 'success', msg: 'Profil mis à jour avec succès !' });
     } catch (err) {
-      setAlert({ type: 'error', msg: err.message || 'Failed to update profile.' });
+      setAlert({ type: 'error', msg: err.message || 'Impossible de mettre à jour le profil.' });
     } finally {
       setSaving(false);
     }
@@ -173,9 +173,9 @@ export default function ProfilePage() {
       await userAPI.updateMe({ password: newPwd });
       setNewPwd('');
       setConfirmPwd('');
-      setAlert({ type: 'success', msg: 'Password changed successfully!' });
+      setAlert({ type: 'success', msg: 'Mot de passe modifié avec succès !' });
     } catch (err) {
-      setAlert({ type: 'error', msg: err.message || 'Failed to change password.' });
+      setAlert({ type: 'error', msg: err.message || 'Impossible de modifier le mot de passe.' });
     } finally {
       setSaving(false);
     }
@@ -195,21 +195,21 @@ export default function ProfilePage() {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      setAlert({ type: 'error', msg: 'Image must be smaller than 2MB' });
+      setAlert({ type: 'error', msg: 'L\'image doit être inférieure à 2 Mo' });
       return;
     }
 
     const reader = new FileReader();
     reader.onloadend = () => {
       setAvatar(reader.result);
-      setAlert({ type: 'success', msg: 'Photo selected! Click "Save Changes" to update.' });
+      setAlert({ type: 'success', msg: 'Photo sélectionnée ! Cliquez sur "Enregistrer les modifications" pour mettre à jour.' });
     };
     reader.readAsDataURL(file);
   }
 
   function handleRemovePhoto() {
     setAvatar('');
-    setAlert({ type: 'success', msg: 'Photo removed! Click "Save Changes" to confirm.' });
+    setAlert({ type: 'success', msg: 'Photo supprimée ! Cliquez sur "Enregistrer les modifications" pour confirmer.' });
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
@@ -218,7 +218,7 @@ export default function ProfilePage() {
     return (
       <div className="profile-loading">
         <div className="spinner" />
-        <p>Loading profile…</p>
+        <p>Chargement du profil...</p>
       </div>
     );
   }
@@ -255,18 +255,18 @@ export default function ProfilePage() {
                 type="button" 
                 className="btn-avatar-edit" 
                 onClick={() => fileInputRef.current?.click()}
-                title="Upload new photo"
+                title="Télécharger une nouvelle photo"
               >
-                📷 Change
+                📷 Modifier
               </button>
               {avatar && (
                 <button 
                   type="button" 
                   className="btn-avatar-remove" 
                   onClick={handleRemovePhoto}
-                  title="Remove photo"
+                  title="Supprimer la photo"
                 >
-                  ❌ Remove
+                  ❌ Supprimer
                 </button>
               )}
             </div>
@@ -285,13 +285,13 @@ export default function ProfilePage() {
         {/* Left — read-only info */}
         <div className="profile-info-card">
           <div className="profile-info-card-header">
-            <h3>Account Info</h3>
+            <h3>Infos du compte</h3>
           </div>
           <div className="profile-info-list">
             <div className="profile-info-item">
               <span className="profile-info-icon">👤</span>
               <div>
-                <div className="profile-info-label">Full Name</div>
+                <div className="profile-info-label">Nom complet</div>
                 <div className="profile-info-value">{profile?.fullName || '—'}</div>
               </div>
             </div>
@@ -299,7 +299,7 @@ export default function ProfilePage() {
             <div className="profile-info-item">
               <span className="profile-info-icon">✉️</span>
               <div>
-                <div className="profile-info-label">Email</div>
+                <div className="profile-info-label">E-mail</div>
                 <div className="profile-info-value">{profile?.email || '—'}</div>
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function ProfilePage() {
             <div className="profile-info-item">
               <span className="profile-info-icon">🔑</span>
               <div>
-                <div className="profile-info-label">Role</div>
+                <div className="profile-info-label">Rôle</div>
                 <div className="profile-info-value">{roleLabel || '—'}</div>
               </div>
             </div>
@@ -315,12 +315,12 @@ export default function ProfilePage() {
             <div className="profile-info-item">
               <span className="profile-info-icon">🆔</span>
               <div>
-                <div className="profile-info-label">User ID</div>
+                <div className="profile-info-label">ID Utilisateur</div>
                 <div
                   className="profile-info-value"
                   style={{ color: profile?.matricule ? 'var(--gray-800)' : 'var(--gray-400)' }}
                 >
-                  {profile?.matricule || 'Not Set'}
+                  {profile?.matricule || 'Non défini'}
                 </div>
               </div>
             </div>
@@ -329,7 +329,7 @@ export default function ProfilePage() {
               <div className="profile-info-item">
                 <span className="profile-info-icon">📅</span>
                 <div>
-                  <div className="profile-info-label">Member Since</div>
+                  <div className="profile-info-label">Membre depuis</div>
                   <div className="profile-info-value">
                     {new Date(profile.createdAt).toLocaleDateString('fr-FR', {
                       day: 'numeric', month: 'long', year: 'numeric',
@@ -350,7 +350,7 @@ export default function ProfilePage() {
               onClick={() => switchTab('info')}
               type="button"
             >
-              <span>✏️</span> Edit Profile
+              <span>✏️</span> Modifier le profil
             </button>
             <button
               id="tab-password"
@@ -358,7 +358,7 @@ export default function ProfilePage() {
               onClick={() => switchTab('password')}
               type="button"
             >
-              <span>🔒</span> Change Password
+              <span>🔒</span> Changer le mot de passe
             </button>
           </div>
 
@@ -378,7 +378,7 @@ export default function ProfilePage() {
               <form id="form-info" onSubmit={handleSaveInfo} noValidate>
                 <FormField
                   id="profile-fullName"
-                  label="Full Name"
+                  label="Nom complet"
                   icon="👤"
                   required
                   error={infoErrors.fullName}
@@ -392,14 +392,14 @@ export default function ProfilePage() {
                       setFullName(e.target.value);
                       setInfoErrors(p => ({ ...p, fullName: '' }));
                     }}
-                    placeholder="Your full name"
+                    placeholder="Votre nom complet"
                     autoComplete="name"
                   />
                 </FormField>
 
                 <FormField
                   id="profile-email"
-                  label="Email Address"
+                  label="Adresse e-mail"
                   icon="✉️"
                   required
                   error={infoErrors.email}
@@ -413,14 +413,14 @@ export default function ProfilePage() {
                       setEmail(e.target.value);
                       setInfoErrors(p => ({ ...p, email: '' }));
                     }}
-                    placeholder="your@email.com"
+                    placeholder="votre@email.com"
                     autoComplete="email"
                   />
                 </FormField>
 
                 <FormField
                   id="profile-matricule"
-                  label="User ID"
+                  label="ID Utilisateur"
                   icon="🆔"
                   optional
                   error={infoErrors.matricule}
@@ -436,7 +436,7 @@ export default function ProfilePage() {
                       setMatricule(val);
                       setInfoErrors(p => ({ ...p, matricule: '' }));
                     }}
-                    placeholder="8 digits, e.g. 12345678"
+                    placeholder="8 chiffres, ex. 12345678"
                     maxLength={8}
                     inputMode="numeric"
                   />
@@ -449,8 +449,8 @@ export default function ProfilePage() {
                   disabled={saving}
                 >
                   {saving
-                    ? <><span className="btn-spinner" /> Saving…</>
-                    : <><span>💾</span> Save Changes</>}
+                    ? <><span className="btn-spinner" /> Enregistrement…</>
+                    : <><span>💾</span> Enregistrer les modifications</>}
                 </button>
               </form>
             )}
@@ -460,7 +460,7 @@ export default function ProfilePage() {
               <form id="form-password" onSubmit={handleSavePassword} noValidate>
                 <FormField
                   id="profile-new-pwd"
-                  label="New Password"
+                  label="Nouveau mot de passe"
                   icon="🔐"
                   required
                   error={pwdErrors.newPwd}
@@ -474,7 +474,7 @@ export default function ProfilePage() {
                       setNewPwd(e.target.value);
                       setPwdErrors(p => ({ ...p, newPwd: '' }));
                     }}
-                    placeholder="At least 8 characters"
+                    placeholder="Au moins 8 caractères"
                     autoComplete="new-password"
                     style={{ paddingRight: 40 }}
                   />
@@ -482,7 +482,7 @@ export default function ProfilePage() {
                     type="button"
                     className="profile-input-toggle"
                     onClick={() => setShowNew(v => !v)}
-                    aria-label={showNew ? 'Hide password' : 'Show password'}
+                    aria-label={showNew ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   >
                     {showNew ? '🙈' : '👁️'}
                   </button>
@@ -506,7 +506,7 @@ export default function ProfilePage() {
 
                 <FormField
                   id="profile-confirm-pwd"
-                  label="Confirm New Password"
+                  label="Confirmer le nouveau mot de passe"
                   icon="🔏"
                   required
                   error={pwdErrors.confirmPwd}
@@ -520,7 +520,7 @@ export default function ProfilePage() {
                       setConfirmPwd(e.target.value);
                       setPwdErrors(p => ({ ...p, confirmPwd: '' }));
                     }}
-                    placeholder="Repeat your new password"
+                    placeholder="Répétez votre nouveau mot de passe"
                     autoComplete="new-password"
                     style={{ paddingRight: 40 }}
                   />
@@ -528,7 +528,7 @@ export default function ProfilePage() {
                     type="button"
                     className="profile-input-toggle"
                     onClick={() => setShowConfirm(v => !v)}
-                    aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                    aria-label={showConfirm ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   >
                     {showConfirm ? '🙈' : '👁️'}
                   </button>
@@ -541,8 +541,8 @@ export default function ProfilePage() {
                   disabled={saving}
                 >
                   {saving
-                    ? <><span className="btn-spinner" /> Updating…</>
-                    : <><span>🔒</span> Update Password</>}
+                    ? <><span className="btn-spinner" /> Mise à jour…</>
+                    : <><span>🔒</span> Modifier le mot de passe</>}
                 </button>
               </form>
             )}
