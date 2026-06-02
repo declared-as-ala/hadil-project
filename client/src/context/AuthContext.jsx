@@ -42,22 +42,6 @@ export function AuthProvider({ children }) {
     return res;
   }, []);
 
-  const signup = useCallback(async (data) => {
-    const res = await authAPI.signup(data);
-    const actualToken = res.data?.accessToken;
-    const actualUser = res.data?.user;
-
-    if (actualToken) {
-      localStorage.setItem('token', actualToken);
-      setToken(actualToken);
-    }
-    if (actualUser) {
-      localStorage.setItem('user', JSON.stringify(actualUser));
-      setUser(actualUser);
-    }
-    return res;
-  }, []);
-
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -85,7 +69,6 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!token,
     role: user?.role || null,
     login,
-    signup,
     logout,
     refreshUser,
   };

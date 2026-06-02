@@ -1,37 +1,92 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { employesAPI } from '../../api/employes.api';
+import { congesAPI } from '../../api/conges.api';
 import { useApiToast } from '../../components/common/Toast';
 import Badge from '../../components/common/Badge';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
+import EmployeFormPage from './EmployeFormPage';
 import { formatDate, formatLabel } from '../../utils/formatters';
 import RoleGuard from '../../components/common/RoleGuard';
 import { ROLES } from '../../utils/constants';
 import '../CrudPage.css';
 
+function getEntityId(entity) {
+  return entity?.id || entity?._id || (typeof entity === 'string' ? entity : '');
+}
+
+function getCongeEndDate(conge) {
+  const end = new Date(conge.date_debut);
+  end.setHours(23, 59, 59, 999);
+  end.setDate(end.getDate() + Math.max(Number(conge.periode) || 1, 1) - 1);
+  return end;
+}
+
+function isCongeActiveToday(conge) {
+  if (!conge?.date_debut || conge.status !== 'approved') return false;
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const todayEnd = new Date(todayStart);
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const start = new Date(conge.date_debut);
+  start.setHours(0, 0, 0, 0);
+
+  return start <= todayEnd && getCongeEndDate(conge) >= todayStart;
+}
+
 export default function EmployesPage() {
-  const { t } = useTranslation();
   const toast = useApiToast();
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('search') || '';
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(urlSearch);
   const [statusFilter, setStatusFilter] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [viewEmp, setViewEmp] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
 
   useEffect(() => {
     loadEmployes();
   }, [statusFilter]);
 
+  useEffect(() => {
+    setSearch(urlSearch);
+  }, [urlSearch]);
+
   async function loadEmployes() {
     setLoading(true);
     try {
-      const res = await employesAPI.getAll({ status: statusFilter || undefined });
-      setData(res.data || []);
+      const [employesRes, congesRes] = await Promise.allSettled([
+        employesAPI.getAll(),
+        congesAPI.getAll({ status: 'approved' }),
+      ]);
+
+      if (employesRes.status === 'rejected') {
+        throw employesRes.reason;
+      }
+
+      const activeLeaveEmployeeIds = new Set(
+        (congesRes.status === 'fulfilled' ? congesRes.value.data || [] : [])
+          .filter(isCongeActiveToday)
+          .map((conge) => getEntityId(conge.employe))
+          .filter(Boolean)
+      );
+
+      setData((employesRes.value.data || []).map((employe) => {
+        if (employe.status === 'inactif' || employe.status === 'inactiff') return employe;
+        return {
+          ...employe,
+          status: activeLeaveEmployeeIds.has(getEntityId(employe)) ? 'en_conge' : 'actif',
+        };
+      }));
     } catch (err) {
       toast.error(err);
     } finally {
@@ -44,7 +99,7 @@ export default function EmployesPage() {
     setDeleteLoading(true);
     try {
       await employesAPI.delete(deleteTarget);
-      toast.success('Deleted', 'Employee and their account have been removed.');
+      toast.success('Supprimé', 'L\'employé et son compte ont été supprimés.');
       setData((prev) => prev.filter((e) => e.id !== deleteTarget));
       setDeleteTarget(null);
     } catch (err) {
@@ -55,6 +110,7 @@ export default function EmployesPage() {
   }
 
   const filtered = data.filter((e) => {
+    if (statusFilter && e.status !== statusFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     const nom = (e.nom || '').toLowerCase();
@@ -70,12 +126,14 @@ export default function EmployesPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1>{t('employes.title')}</h1>
-          <p>{t('employes.subtitle')}</p>
+          <h1>Employés</h1>
+          <p>Gérez les employés de votre organisation.</p>
         </div>
         <div className="page-header-actions">
           <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
-            <Link to="/employes/new" className="btn btn-primary">{t('employes.add')}</Link>
+            <button type="button" className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+              + Ajouter un employé
+            </button>
           </RoleGuard>
         </div>
       </div>
@@ -86,7 +144,7 @@ export default function EmployesPage() {
             <input
               type="text"
               className="form-input"
-              placeholder={t('employes.search')}
+              placeholder="Rechercher un employé..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: 260 }}
@@ -97,24 +155,26 @@ export default function EmployesPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="">All Status</option>
-              <option value="actif">Active</option>
-              <option value="inactif">Inactive</option>
-              <option value="en_conge">On Leave</option>
+              <option value="">Tous les statuts</option>
+              <option value="actif">Actif</option>
+              <option value="inactif">Inactif</option>
+              <option value="en_conge">En congé</option>
             </select>
           </div>
-          <span className="table-count">{filtered.length} employee{filtered.length !== 1 ? 's' : ''}</span>
+          <span className="table-count">{filtered.length} employé{filtered.length !== 1 ? 's' : ''}</span>
         </div>
 
         {filtered.length === 0 ? (
           <EmptyState
             icon="👥"
-            title={search ? 'No results found' : 'No employees yet'}
-            description={search ? 'Try adjusting your search.' : 'Add your first employee to get started.'}
+            title={search ? 'Aucun résultat trouvé' : 'Aucun employé pour le moment'}
+            description={search ? 'Essayez d\'ajuster votre recherche.' : 'Ajoutez votre premier employé pour commencer.'}
             action={
               !search && (
                 <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
-                  <Link to="/employes/new" className="btn btn-primary">+ Add Employee</Link>
+                  <button type="button" className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+                    + Ajouter un employé
+                  </button>
                 </RoleGuard>
               )
             }
@@ -124,12 +184,11 @@ export default function EmployesPage() {
             <table>
               <thead>
                 <tr>
-                  <th>{t('employes.columns.employee')}</th>
-                  <th>{t('employes.columns.position')}</th>
-                  <th>{t('employes.columns.department')}</th>
-                  <th>{t('employes.columns.hireDate')}</th>
-                  <th>{t('employes.columns.status')}</th>
-                  <th>{t('employes.columns.actions')}</th>
+                  <th>Employé</th>
+                  <th>Poste</th>
+                  <th>Date d'embauche</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,24 +209,28 @@ export default function EmployesPage() {
                         </div>
                       </td>
                       <td>{emp.poste || '—'}</td>
-                      <td>{emp.departement || '—'}</td>
                       <td>{formatDate(emp.dateEmbauche)}</td>
                       <td>
                         <Badge variant={statusVariant}>{formatLabel(emp.status)}</Badge>
                       </td>
                       <td>
                         <div className="table-actions">
-                          <button className="btn-icon" title="View" onClick={() => setViewEmp(emp)}>
+                          <button className="btn-icon" title="Voir" onClick={() => setViewEmp(emp)}>
                             👁️
                           </button>
                           <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
-                            <Link to={`/employes/${emp.id}/edit`} className="btn-icon" title="Edit">
+                            <button
+                              type="button"
+                              className="btn-icon"
+                              title="Modifier"
+                              onClick={() => setEditTarget(emp.id)}
+                            >
                               ✏️
-                            </Link>
+                            </button>
                             <RoleGuard roles={[ROLES.ADMIN]}>
                               <button
                                 className="btn-icon danger"
-                                title="Delete"
+                                title="Supprimer"
                                 onClick={() => setDeleteTarget(emp.id)}
                               >
                                 🗑️
@@ -185,13 +248,48 @@ export default function EmployesPage() {
         )}
       </div>
 
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Ajouter un employé"
+        size="lg"
+      >
+        <EmployeFormPage
+          embedded
+          onCancel={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            loadEmployes();
+          }}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        title="Modifier l'employé"
+        size="lg"
+      >
+        {editTarget && (
+          <EmployeFormPage
+            embedded
+            employeId={editTarget}
+            onCancel={() => setEditTarget(null)}
+            onSuccess={() => {
+              setEditTarget(null);
+              loadEmployes();
+            }}
+          />
+        )}
+      </Modal>
+
       <ConfirmDialog
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title={t('employes.delete.title')}
-        message={t('employes.delete.message')}
-        confirmLabel={t('common.delete')}
+        title="Supprimer l'employé"
+        message="Voulez-vous vraiment supprimer cet employé ? Son compte de connexion sera également supprimé. Cette action est irréversible."
+        confirmLabel="Supprimer"
         confirmVariant="danger"
         loading={deleteLoading}
       />
@@ -199,16 +297,23 @@ export default function EmployesPage() {
       <Modal
         isOpen={!!viewEmp}
         onClose={() => setViewEmp(null)}
-        title={t('employes.view.title')}
+        title="Détails de l'employé"
         size="lg"
         footer={
           <>
-            <button className="btn btn-outline" onClick={() => setViewEmp(null)}>{t('common.close')}</button>
+            <button className="btn btn-outline" onClick={() => setViewEmp(null)}>Fermer</button>
             <RoleGuard roles={[ROLES.ADMIN, ROLES.RH]}>
               {viewEmp && (
-                <Link to={`/employes/${viewEmp.id}/edit`} className="btn btn-primary">
-                  ✏️ {t('common.edit')}
-                </Link>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setEditTarget(viewEmp.id);
+                    setViewEmp(null);
+                  }}
+                >
+                  ✏️ Modifier
+                </button>
               )}
             </RoleGuard>
           </>
@@ -230,31 +335,39 @@ export default function EmployesPage() {
             </div>
             <div className="detail-grid">
               <div className="detail-field">
-                <div className="detail-field-label">Position</div>
+                <div className="detail-field-label">Poste</div>
                 <div className="detail-field-value">{viewEmp.poste || '—'}</div>
               </div>
               <div className="detail-field">
-                <div className="detail-field-label">Phone</div>
+                <div className="detail-field-label">Téléphone</div>
                 <div className="detail-field-value">{viewEmp.telephone || '—'}</div>
               </div>
               <div className="detail-field">
-                <div className="detail-field-label">Hire Date</div>
+                <div className="detail-field-label">Date d'embauche</div>
                 <div className="detail-field-value">{formatDate(viewEmp.dateEmbauche)}</div>
               </div>
               <div className="detail-field">
-                <div className="detail-field-label">Base Salary</div>
+                <div className="detail-field-label">Salaire de base</div>
                 <div className="detail-field-value">
-                  {viewEmp.salaire_base != null ? `${Number(viewEmp.salaire_base).toLocaleString()} DA` : '—'}
+                  {viewEmp.salaire_base != null ? `${Number(viewEmp.salaire_base).toLocaleString()} DT` : '—'}
+                </div>
+              </div>
+              {viewEmp.salaire_total != null && viewEmp.salaire_total !== viewEmp.salaire_base && (
+                <div className="detail-field" style={{ backgroundColor: '#f0fdf4', borderRadius: '8px', padding: '8px 12px' }}>
+                  <div className="detail-field-label" style={{ color: '#16a34a', fontWeight: '600' }}>Salaire total calculé (Paie)</div>
+                  <div className="detail-field-value" style={{ color: '#15803d', fontWeight: 'bold' }}>
+                    {viewEmp.salaire_total.toLocaleString()} DT
+                  </div>
+                </div>
+              )}
+              <div className="detail-field">
+                <div className="detail-field-label">Taux heures sup</div>
+                <div className="detail-field-value">
+                  {viewEmp.prix_heure_sup != null ? `${Number(viewEmp.prix_heure_sup).toLocaleString()} DT/h` : '—'}
                 </div>
               </div>
               <div className="detail-field">
-                <div className="detail-field-label">Overtime Rate</div>
-                <div className="detail-field-value">
-                  {viewEmp.prix_heure_sup != null ? `${Number(viewEmp.prix_heure_sup).toLocaleString()} DA/hr` : '—'}
-                </div>
-              </div>
-              <div className="detail-field">
-                <div className="detail-field-label">Created</div>
+                <div className="detail-field-label">Créé le</div>
                 <div className="detail-field-value">{formatDate(viewEmp.createdAt)}</div>
               </div>
             </div>
