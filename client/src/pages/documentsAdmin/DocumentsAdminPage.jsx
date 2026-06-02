@@ -46,6 +46,8 @@ const TABS = [
 
 const EMPTY_FORM = { typeDocument: 'attestation_travail', description: '' };
 
+const getDemandeId = (demande) => demande?.id || demande?._id || '';
+
 // ── Document preview content ───────────────────────────────────────────────────
 
 const formatDT = (amount) => {
@@ -67,7 +69,7 @@ function buildDocumentContent(demande) {
 
   const poste = emp.poste || '—';
   const dateEmbauche = emp.dateEmbauche ? new Date(emp.dateEmbauche).toLocaleDateString('fr-FR') : '—';
-  const salaireBase = emp.salaire_base || 0;
+  const salaireBase = emp.salaire_total || emp.salaire_base || 0;
   const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
   const type = TYPE_LABELS[demande.typeDocument] || demande.typeDocument;
 
@@ -77,6 +79,8 @@ function buildDocumentContent(demande) {
 // ── Sub-component: Employee request card ──────────────────────────────────────
 
 function EmployeeCard({ demande, onDownload, onDelete }) {
+  const demandeId = getDemandeId(demande);
+
   return (
     <div className="doc-card" data-status={demande.status}>
       <div className="doc-card-header">
@@ -111,10 +115,11 @@ function EmployeeCard({ demande, onDownload, onDelete }) {
         <button
           className="btn btn-sm btn-outline"
           onClick={() => {
-            if (window.confirm('Voulez-vous vraiment supprimer cette demande ?')) {
-              onDelete(demande.id);
+            if (demandeId && window.confirm('Voulez-vous vraiment supprimer cette demande ?')) {
+              onDelete(demandeId);
             }
           }}
+          disabled={!demandeId}
           style={{ color: '#ef4444', borderColor: '#ef4444' }}
         >
           🗑️ Supprimer
@@ -126,14 +131,16 @@ function EmployeeCard({ demande, onDownload, onDelete }) {
 
 // ── Sub-component: Admin request card ─────────────────────────────────────────
 
-function AdminCard({ demande, onUpdateStatus, onDelete }) {
+function AdminCard({ demande, onUpdateStatus, onDelete, onDownload }) {
   const [open, setOpen] = useState(false);
   const [comment, setComment] = useState(demande.commentaireAdmin || '');
   const [loading, setLoading] = useState(false);
+  const demandeId = getDemandeId(demande);
 
   async function decide(status) {
+    if (!demandeId) return;
     setLoading(true);
-    await onUpdateStatus(demande.id, status, comment);
+    await onUpdateStatus(demandeId, status, comment);
     setLoading(false);
     setOpen(false);
   }
@@ -142,6 +149,9 @@ function AdminCard({ demande, onUpdateStatus, onDelete }) {
   const usr = emp.utilisateur || {};
   const prenom = emp.prenom || usr.prenom || '';
   const nom = emp.nom || usr.nom || '';
+  const employeeName = `${prenom} ${nom}`.trim() || 'Employé supprimé';
+  const employeeInitial = (nom[0] || prenom[0] || '-').toUpperCase();
+  const hasEmployee = Boolean(demande.employe && (prenom || nom));
 
   return (
     <div className="doc-card" data-status={demande.status}>
@@ -155,9 +165,9 @@ function AdminCard({ demande, onUpdateStatus, onDelete }) {
 
       <div className="doc-card-employee">
         <div className="avatar avatar-sm">
-          {(nom[0] || prenom[0] || '?').toUpperCase()}
+          {employeeInitial}
         </div>
-        <span>{prenom} {nom}</span>
+        <span>{employeeName}</span>
       </div>
 
       {demande.description && (
@@ -176,10 +186,16 @@ function AdminCard({ demande, onUpdateStatus, onDelete }) {
       )}
 
       <div className="doc-card-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-        {demande.status === 'en_attente' && (
+        {demande.status === 'acceptee' && onDownload && (
+          <button className="btn btn-sm btn-primary" onClick={() => onDownload(demande)}>
+            🖨️ Imprimer / PDF
+          </button>
+        )}
+        {demande.status === 'en_attente' && hasEmployee && (
           <button
             className="btn btn-sm btn-outline"
             onClick={() => setOpen((v) => !v)}
+            disabled={!demandeId}
           >
             {open ? 'Annuler' : '✏️ Décider'}
           </button>
@@ -187,10 +203,11 @@ function AdminCard({ demande, onUpdateStatus, onDelete }) {
         <button
           className="btn btn-sm btn-outline"
           onClick={() => {
-            if (window.confirm('Voulez-vous vraiment supprimer cette demande ?')) {
-              onDelete(demande.id);
+            if (demandeId && window.confirm('Voulez-vous vraiment supprimer cette demande ?')) {
+              onDelete(demandeId);
             }
           }}
+          disabled={!demandeId}
           style={{ color: '#ef4444', borderColor: '#ef4444' }}
         >
           🗑️ Supprimer
@@ -285,6 +302,11 @@ export default function DocumentsAdminPage() {
 
   // ── Admin: update status ───────────────────────────────────────────────────
   async function handleUpdateStatus(id, status, commentaireAdmin) {
+    if (!id) {
+      toast.error({ message: 'Identifiant de demande invalide.' });
+      return;
+    }
+
     try {
       await documentsAdminAPI.updateStatut(id, { status, commentaireAdmin });
       toast.success('Statut mis à jour', `La demande a été ${status === 'acceptee' ? 'acceptée' : 'refusée'}.`);
@@ -301,6 +323,11 @@ export default function DocumentsAdminPage() {
 
   // ── Admin / Employee: Delete request ───────────────────────────────────────
   async function handleDelete(id) {
+    if (!id) {
+      toast.error({ message: 'Identifiant de demande invalide.' });
+      return;
+    }
+
     try {
       if (isAdmin) {
         await documentsAdminAPI.delete(id);
@@ -634,7 +661,12 @@ export default function DocumentsAdminPage() {
           ) : (
             <div className="doc-cards-grid">
               {demandes.map((d) => (
-                <EmployeeCard key={d.id} demande={d} onDownload={handleDownload} onDelete={handleDelete} />
+                <EmployeeCard
+                  key={getDemandeId(d) || `${d.typeDocument}-${d.createdAt}`}
+                  demande={d}
+                  onDownload={handleDownload}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           )}
@@ -679,10 +711,11 @@ export default function DocumentsAdminPage() {
             <div className="doc-cards-grid">
               {displayed.map((d) => (
                 <AdminCard
-                  key={d.id}
+                  key={getDemandeId(d) || `${d.typeDocument}-${d.createdAt}`}
                   demande={d}
                   onUpdateStatus={handleUpdateStatus}
                   onDelete={handleDelete}
+                  onDownload={handleDownload}
                 />
               ))}
             </div>

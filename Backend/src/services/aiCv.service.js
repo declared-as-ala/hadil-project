@@ -11,11 +11,29 @@ const XAI_TIMEOUT_MS = 25000;
 const DEFAULT_MODEL = process.env.XAI_MODEL || 'grok-4-latest';
 const DEFAULT_BASE_URL = process.env.XAI_BASE_URL || 'https://api.x.ai/v1';
 
-const ANALYSIS_SYSTEM_PROMPT =
-  'You are an HR assistant. Analyze only the provided CV and job description. Do not invent information. Do not judge protected characteristics. Return professional, structured, factual hiring support.';
+const FRENCH_UNAVAILABLE_MESSAGE = "Cette information n'est pas disponible dans le CV.";
 
-const CHAT_SYSTEM_PROMPT =
-  'You are an HR assistant chatbot. Answer ONLY from the provided CV and job description. If data is missing, answer exactly: "This information is not available in the CV." Never infer protected characteristics.';
+const ANALYSIS_SYSTEM_PROMPT = [
+  'Vous etes un assistant RH.',
+  'Analysez uniquement le CV et la description du poste fournis.',
+  'Ne jamais inventer des informations et ne jamais juger les caracteristiques protegees.',
+  'Repondez en JSON strict, mais toutes les valeurs textuelles doivent etre en francais.',
+  'Gardez seulement les noms propres et les noms de technologies dans leur forme originale.',
+].join(' ');
+
+const CHAT_SYSTEM_PROMPT = [
+  'Vous etes un assistant RH conversationnel.',
+  'Repondez uniquement a partir du CV et de la description du poste fournis.',
+  'Repondez toujours en francais.',
+  `Si une information manque, repondez exactement: "${FRENCH_UNAVAILABLE_MESSAGE}"`,
+  'Ne jamais inferer les caracteristiques protegees.',
+].join(' ');
+
+const RECOMMENDATION_LABELS = {
+  strong_match: 'Excellente correspondance',
+  possible_match: 'Correspondance possible',
+  weak_match: 'Faible correspondance',
+};
 
 const ensureUploadsDir = () => {
   const dir = path.join(__dirname, '../../uploads/cv-ai');
@@ -54,28 +72,39 @@ const parseAiJson = (raw) => {
   }
 };
 
-const normalizeAnalysis = (obj = {}) => ({
-  candidate_summary: obj.candidate_summary || '',
-  detected_skills: Array.isArray(obj.detected_skills) ? obj.detected_skills : [],
-  technical_skills: Array.isArray(obj.technical_skills) ? obj.technical_skills : [],
-  soft_skills: Array.isArray(obj.soft_skills) ? obj.soft_skills : [],
-  education: Array.isArray(obj.education) ? obj.education : [],
-  experience_summary: obj.experience_summary || '',
-  experience_years_estimate: obj.experience_years_estimate || '',
-  languages: Array.isArray(obj.languages) ? obj.languages : [],
-  certifications: Array.isArray(obj.certifications) ? obj.certifications : [],
-  strongest_points: Array.isArray(obj.strongest_points) ? obj.strongest_points : [],
-  weak_points: Array.isArray(obj.weak_points) ? obj.weak_points : [],
-  missing_requirements: Array.isArray(obj.missing_requirements) ? obj.missing_requirements : [],
-  job_match_score: Number.isFinite(obj.job_match_score) ? Math.max(0, Math.min(100, obj.job_match_score)) : 0,
-  recommendation: ['strong_match', 'possible_match', 'weak_match'].includes(obj.recommendation)
-    ? obj.recommendation
-    : 'possible_match',
-  recommended_interview_questions: Array.isArray(obj.recommended_interview_questions)
-    ? obj.recommended_interview_questions
-    : [],
-  suggested_next_step: obj.suggested_next_step || '',
-});
+const normalizeAnalysis = (obj = {}) => {
+  let score = Number.isFinite(obj.job_match_score) ? obj.job_match_score : 0;
+  // If the model returned a decimal score between 0 and 1, convert to a percentage
+  if (score > 0 && score <= 1.0) {
+    score = Math.round(score * 100);
+  } else {
+    score = Math.round(score);
+  }
+  score = Math.max(0, Math.min(100, score));
+
+  return {
+    candidate_summary: obj.candidate_summary || '',
+    detected_skills: Array.isArray(obj.detected_skills) ? obj.detected_skills : [],
+    technical_skills: Array.isArray(obj.technical_skills) ? obj.technical_skills : [],
+    soft_skills: Array.isArray(obj.soft_skills) ? obj.soft_skills : [],
+    education: Array.isArray(obj.education) ? obj.education : [],
+    experience_summary: obj.experience_summary || '',
+    experience_years_estimate: obj.experience_years_estimate || '',
+    languages: Array.isArray(obj.languages) ? obj.languages : [],
+    certifications: Array.isArray(obj.certifications) ? obj.certifications : [],
+    strongest_points: Array.isArray(obj.strongest_points) ? obj.strongest_points : [],
+    weak_points: Array.isArray(obj.weak_points) ? obj.weak_points : [],
+    missing_requirements: Array.isArray(obj.missing_requirements) ? obj.missing_requirements : [],
+    job_match_score: score,
+    recommendation: ['strong_match', 'possible_match', 'weak_match'].includes(obj.recommendation)
+      ? obj.recommendation
+      : 'possible_match',
+    recommended_interview_questions: Array.isArray(obj.recommended_interview_questions)
+      ? obj.recommended_interview_questions
+      : [],
+    suggested_next_step: obj.suggested_next_step || '',
+  };
+};
 
 class AiCvService {
   getUploadConfig() {
@@ -89,7 +118,7 @@ class AiCvService {
   }
 
   validateUpload(file) {
-    if (!file) throw new ApiError(400, 'CV file is required');
+    if (!file) throw new ApiError(400, 'Le fichier CV est requis');
     const allowedMime = [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -98,10 +127,10 @@ class AiCvService {
     const allowedExt = ['.pdf', '.docx', '.txt'];
     const ext = path.extname(file.originalname || '').toLowerCase();
     if (!allowedMime.includes(file.mimetype) || !allowedExt.includes(ext)) {
-      throw new ApiError(400, 'Only PDF, DOCX, and TXT files are allowed');
+      throw new ApiError(400, 'Seuls les fichiers PDF, DOCX et TXT sont autorises');
     }
     const maxSize = 8 * 1024 * 1024;
-    if (file.size > maxSize) throw new ApiError(400, 'File size must be <= 8MB');
+    if (file.size > maxSize) throw new ApiError(400, 'La taille du fichier doit etre inferieure ou egale a 8 Mo');
   }
 
   async extractTextFromFile(filePath, mimeType) {
@@ -127,7 +156,7 @@ class AiCvService {
   async uploadCv(file, userId) {
     this.validateUpload(file);
     const extractedText = await this.extractTextFromFile(file.path, file.mimetype);
-    if (!extractedText) throw new ApiError(400, 'Unable to extract text from the CV');
+    if (!extractedText) throw new ApiError(400, "Impossible d'extraire le texte du CV");
 
     const candidateName = this.detectCandidateName(extractedText, file.originalname);
     const created = await CvAiAnalysis.create({
@@ -143,9 +172,9 @@ class AiCvService {
     return created;
   }
 
-  async callXai(messages, temperature = 0.2, retries = 1) {
+  async callXai(messages, temperature = 0.2, isJson = false, retries = 1) {
     const apiKey = process.env.XAI_API_KEY;
-    if (!apiKey) throw new ApiError(500, 'XAI_API_KEY is not configured');
+    if (!apiKey) throw new ApiError(500, "La cle API de l'IA n'est pas configuree");
 
     const url = `${DEFAULT_BASE_URL}/chat/completions`;
 
@@ -153,18 +182,21 @@ class AiCvService {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), XAI_TIMEOUT_MS);
+        const requestBody = {
+          model: DEFAULT_MODEL,
+          messages,
+          temperature,
+          ...(isJson ? { response_format: { type: 'json_object' } } : {}),
+        };
+        console.log('[AI CV DEBUG] isJson:', isJson, 'requestBody:', JSON.stringify(requestBody));
+
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            model: DEFAULT_MODEL,
-            messages,
-            temperature,
-            response_format: { type: 'json_object' },
-          }),
+          body: JSON.stringify(requestBody),
           signal: controller.signal,
         });
         clearTimeout(timeout);
@@ -188,24 +220,24 @@ class AiCvService {
           console.error('[AI CV] xAI client error', { message: error.message });
           throw new ApiError(
             Number(error.status) === 401 || Number(error.status) === 403 ? 401 : 400,
-            'AI configuration request failed. Verify API key, model, and base URL.'
+            "La requete de configuration IA a echoue. Verifiez la cle API, le modele et l'URL de base."
           );
         }
         if (attempt === retries) {
           console.error('[AI CV] xAI call failed', { message: error.message, attempt });
           if (error.name === 'AbortError') {
-            throw new ApiError(504, 'AI request timed out. Please retry.');
+            throw new ApiError(504, "La requete IA a expire. Veuillez reessayer.");
           }
-          throw new ApiError(502, 'AI provider unavailable. Please retry.');
+          throw new ApiError(502, "Le fournisseur IA est indisponible. Veuillez reessayer.");
         }
       }
     }
-    throw new ApiError(502, 'AI provider unavailable. Please retry.');
+    throw new ApiError(502, "Le fournisseur IA est indisponible. Veuillez reessayer.");
   }
 
   async analyzeCv(id, criteria, analystId) {
     const doc = await CvAiAnalysis.findById(id);
-    if (!doc) throw new ApiError(404, 'CV analysis record not found');
+    if (!doc) throw new ApiError(404, 'Analyse de CV introuvable');
 
     const jobCriteria = {
       jobTitle: criteria.jobTitle || '',
@@ -216,14 +248,16 @@ class AiCvService {
     };
 
     const userPrompt = [
-      'Analyze this candidate CV based only on provided data.',
+      'Analyse ce CV candidat uniquement a partir des donnees fournies.',
+      'IMPORTANT: toutes les phrases, resumes, points forts, points faibles, exigences manquantes, questions et recommandations doivent etre rediges en francais.',
+      'Les cles JSON doivent rester exactement comme dans le modele demande, mais les valeurs textuelles doivent etre en francais.',
       `CV_TEXT: ${truncateForPrompt(doc.extractedText)}`,
       `JOB_TITLE: ${jobCriteria.jobTitle}`,
       `JOB_DESCRIPTION: ${truncateForPrompt(jobCriteria.jobDescription)}`,
       `REQUIRED_SKILLS: ${jobCriteria.requiredSkills.join(', ')}`,
       `EXPERIENCE_LEVEL: ${jobCriteria.experienceLevel}`,
       `LANGUAGE_REQUIREMENTS: ${jobCriteria.languageRequirements.join(', ')}`,
-      'Return strict JSON with fields:',
+      'Retourne un JSON strict avec ces champs (job_match_score doit etre un entier entre 0 et 100):',
       '{"candidate_summary":"","detected_skills":[],"technical_skills":[],"soft_skills":[],"education":[],"experience_summary":"","experience_years_estimate":"","languages":[],"certifications":[],"strongest_points":[],"weak_points":[],"missing_requirements":[],"job_match_score":0,"recommendation":"strong_match | possible_match | weak_match","recommended_interview_questions":[],"suggested_next_step":""}',
     ].join('\n');
 
@@ -232,11 +266,12 @@ class AiCvService {
         { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
-      0.1
+      0.1,
+      true
     );
 
     const parsed = parseAiJson(raw);
-    if (!parsed) throw new ApiError(502, 'AI response could not be parsed');
+    if (!parsed) throw new ApiError(502, "La reponse de l'IA n'a pas pu etre interpretee");
     const normalized = normalizeAnalysis(parsed);
 
     doc.jobCriteria = jobCriteria;
@@ -249,15 +284,16 @@ class AiCvService {
 
   async chat(id, question, askedBy) {
     const doc = await CvAiAnalysis.findById(id);
-    if (!doc) throw new ApiError(404, 'CV analysis record not found');
-    if (!question || !question.trim()) throw new ApiError(400, 'Question is required');
+    if (!doc) throw new ApiError(404, 'Analyse de CV introuvable');
+    if (!question || !question.trim()) throw new ApiError(400, 'La question est requise');
 
     const prompt = [
       `CV_TEXT: ${truncateForPrompt(doc.extractedText)}`,
       `JOB_TITLE: ${doc.jobCriteria?.jobTitle || ''}`,
       `JOB_DESCRIPTION: ${truncateForPrompt(doc.jobCriteria?.jobDescription || '')}`,
       `QUESTION: ${question}`,
-      'Remember: answer only from the given CV/job description.',
+      'Reponds uniquement a partir du CV et de la description du poste.',
+      `Reponds toujours en francais. Si l'information manque, reponds exactement: "${FRENCH_UNAVAILABLE_MESSAGE}"`,
     ].join('\n');
 
     const answerRaw = await this.callXai(
@@ -265,14 +301,23 @@ class AiCvService {
         { role: 'system', content: CHAT_SYSTEM_PROMPT },
         { role: 'user', content: prompt },
       ],
-      0.2
+      0.2,
+      false
     );
 
-    const answer = sanitizeText(answerRaw) || 'This information is not available in the CV.';
+    const answer = sanitizeText(answerRaw) || FRENCH_UNAVAILABLE_MESSAGE;
     doc.chatHistory.push({ question: question.trim(), answer, askedBy });
     await doc.save();
 
     return { answer, chatHistory: doc.chatHistory };
+  }
+
+  async clearChat(id) {
+    const doc = await CvAiAnalysis.findById(id);
+    if (!doc) throw new ApiError(404, 'Analyse de CV introuvable');
+    doc.chatHistory = [];
+    await doc.save();
+    return doc;
   }
 
   async list(query = {}) {
@@ -313,13 +358,13 @@ class AiCvService {
       .populate('analyzedBy', 'nom prenom email role')
       .populate('chatHistory.askedBy', 'nom prenom email role')
       .populate('internalNotes.addedBy', 'nom prenom email role');
-    if (!doc) throw new ApiError(404, 'CV analysis record not found');
+    if (!doc) throw new ApiError(404, 'Analyse de CV introuvable');
     return doc;
   }
 
   async updatePipeline(id, payload, userId) {
     const doc = await CvAiAnalysis.findById(id);
-    if (!doc) throw new ApiError(404, 'CV analysis record not found');
+    if (!doc) throw new ApiError(404, 'Analyse de CV introuvable');
 
     if (payload.pipelineStatus) {
       doc.pipelineStatus = payload.pipelineStatus;
@@ -337,11 +382,15 @@ class AiCvService {
 
   async deleteById(id) {
     const doc = await CvAiAnalysis.findByIdAndDelete(id);
-    if (!doc) throw new ApiError(404, 'CV analysis record not found');
+    if (!doc) throw new ApiError(404, 'Analyse de CV introuvable');
     if (doc.originalFilePath && fs.existsSync(doc.originalFilePath)) {
-      fs.unlinkSync(doc.originalFilePath);
+      try {
+        fs.unlinkSync(doc.originalFilePath);
+      } catch (err) {
+        console.error(`Failed to delete physical file at ${doc.originalFilePath}:`, err);
+      }
     }
-    return { message: 'CV analysis deleted successfully' };
+    return { message: 'Analyse de CV supprimee avec succes' };
   }
 
   async generateAnalysisPdf(id) {
@@ -353,20 +402,22 @@ class AiCvService {
       pdf.on('end', () => resolve(Buffer.concat(chunks)));
       pdf.on('error', reject);
 
-      pdf.fontSize(18).text('AI CV Analysis Report', { underline: true });
+      pdf.fontSize(18).text("Rapport d'analyse de CV par IA", { underline: true });
       pdf.moveDown();
-      pdf.fontSize(12).text(`Candidate: ${doc.candidateName || 'Unknown'}`);
-      pdf.text(`Job Title: ${doc.jobCriteria?.jobTitle || 'N/A'}`);
-      pdf.text(`Match Score: ${doc.analysisResult?.job_match_score || 0}/100`);
-      pdf.text(`Recommendation: ${doc.analysisResult?.recommendation || 'possible_match'}`);
+      pdf.fontSize(12).text(`Candidat : ${doc.candidateName || 'Inconnu'}`);
+      pdf.text(`Poste : ${doc.jobCriteria?.jobTitle || 'N/A'}`);
+      pdf.text(`Score d'adequation : ${doc.analysisResult?.job_match_score || 0}/100`);
+      const recommendationLabel =
+        RECOMMENDATION_LABELS[doc.analysisResult?.recommendation] || RECOMMENDATION_LABELS.possible_match;
+      pdf.text(`Recommandation : ${recommendationLabel}`);
       pdf.moveDown();
-      pdf.text(`Summary: ${doc.analysisResult?.candidate_summary || ''}`);
+      pdf.text(`Resume : ${doc.analysisResult?.candidate_summary || ''}`);
       pdf.moveDown();
-      pdf.text(`Strongest Points: ${(doc.analysisResult?.strongest_points || []).join(', ')}`);
-      pdf.text(`Weak Points: ${(doc.analysisResult?.weak_points || []).join(', ')}`);
-      pdf.text(`Missing Requirements: ${(doc.analysisResult?.missing_requirements || []).join(', ')}`);
+      pdf.text(`Points forts : ${(doc.analysisResult?.strongest_points || []).join(', ')}`);
+      pdf.text(`Points faibles : ${(doc.analysisResult?.weak_points || []).join(', ')}`);
+      pdf.text(`Exigences manquantes : ${(doc.analysisResult?.missing_requirements || []).join(', ')}`);
       pdf.moveDown();
-      pdf.text('AI recommendation is only an assistant. Final decision must be made by HR.');
+      pdf.text("La recommandation de l'IA n'est qu'une aide. La decision finale doit etre prise par les RH.");
       pdf.end();
     });
   }
