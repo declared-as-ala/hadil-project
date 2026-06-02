@@ -1,112 +1,52 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import './Sidebar.css';
 import { useAuth } from '../../hooks/useAuth';
-import { ROLES } from '../../utils/constants';
-
-// Items are flat: `section` entries are headers; everything else is a link.
-// Each entry uses an i18n key so labels switch with the language.
-const menuItems = [
-  { key: 'dashboard', path: '/dashboard', icon: '📊', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
-  { section: 'hr', roles: [ROLES.ADMIN, ROLES.RH] },
-  { key: 'employes', path: '/employes', icon: '👥', roles: [ROLES.ADMIN, ROLES.RH] },
-  { key: 'absences', path: '/absences', icon: '📓', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
-  { key: 'conges', path: '/conges', icon: '🏖️', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
-  { key: 'documents', path: '/documents-admin', icon: '📂', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
-  { key: 'heuresSup', path: '/heures-sup', icon: '⏰', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
-  { key: 'paie', path: '/paie', icon: '💰', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
-  { key: 'cvAi', path: '/hr/cv-ai', icon: '🤖', roles: [ROLES.ADMIN, ROLES.RH] },
-  { section: 'communication', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
-  { key: 'messages', path: '/messages', icon: '💬', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
-  { section: 'projects', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
-  { key: 'projets', path: '/projets', icon: '🚀', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE] },
-  { section: 'administration', roles: [ROLES.ADMIN] },
-  { key: 'admin', path: '/admin', icon: '⚙️', roles: [ROLES.ADMIN] },
-  { section: 'account', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
-  { key: 'profile', path: '/profile', icon: '👤', roles: [ROLES.ADMIN, ROLES.RH, ROLES.EMPLOYE, ROLES.STAGIAIRE] },
-];
+import { labelFor, menuItems } from './navigation';
 
 export default function Sidebar({ collapsed = false, onToggleCollapse = () => {} }) {
   const { role } = useAuth();
-  const { t } = useTranslation();
-  const [filter, setFilter] = useState('');
-
-  const labelFor = (item) =>
-    item.section ? t(`sidebar.sections.${item.section}`) : t(`sidebar.links.${item.key}`);
 
   const visibleItems = useMemo(
     () => menuItems.filter((item) => item.roles.includes(role)),
     [role]
   );
 
-  // Filter by translated label. Drop section headers with no matching links.
-  const filteredItems = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    if (!q) return visibleItems;
-
-    const result = [];
-    for (let i = 0; i < visibleItems.length; i += 1) {
-      const item = visibleItems[i];
-      if (item.section) {
-        let hasMatch = false;
-        for (let j = i + 1; j < visibleItems.length && !visibleItems[j].section; j += 1) {
-          if (labelFor(visibleItems[j]).toLowerCase().includes(q)) {
-            hasMatch = true;
-            break;
-          }
-        }
-        if (hasMatch) result.push(item);
-      } else if (labelFor(item).toLowerCase().includes(q)) {
-        result.push(item);
-      }
-    }
-    return result;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleItems, filter, t]);
-
   return (
     <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <span className="sidebar-logo-icon">🏢</span>
-          {!collapsed && <span className="sidebar-logo-text">{t('sidebar.logo')}</span>}
+          <span className="sidebar-logo-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#a855f7" />
+                  <stop offset="100%" stopColor="#6366f1" />
+                </linearGradient>
+              </defs>
+              <rect x="2" y="2" width="9" height="9" rx="2" fill="url(#logoGrad)" />
+              <rect x="13" y="2" width="9" height="9" rx="2" fill="url(#logoGrad)" opacity="0.4" />
+              <rect x="2" y="13" width="9" height="9" rx="2" fill="url(#logoGrad)" opacity="0.4" />
+              <rect x="13" y="13" width="9" height="9" rx="2" fill="url(#logoGrad)" />
+            </svg>
+          </span>
+          {!collapsed && <span className="sidebar-logo-text">RH System</span>}
         </div>
         <button
           className="sidebar-toggle"
           onClick={onToggleCollapse}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? '▶️' : '◀️'}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
         </button>
       </div>
 
-      {!collapsed && (
-        <div className="sidebar-search">
-          <span className="sidebar-search-icon">🔍</span>
-          <input
-            type="text"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder={t('sidebar.filterPlaceholder')}
-            className="sidebar-search-input"
-            aria-label={t('sidebar.filterPlaceholder')}
-          />
-          {filter && (
-            <button
-              type="button"
-              className="sidebar-search-clear"
-              onClick={() => setFilter('')}
-              title={t('common.cancel')}
-            >
-              ×
-            </button>
-          )}
-        </div>
-      )}
-
       <nav className="sidebar-nav">
-        {filteredItems.map((item, idx) => {
+        {visibleItems.map((item, idx) => {
           if (item.section) {
             return (
               !collapsed && (
@@ -116,6 +56,7 @@ export default function Sidebar({ collapsed = false, onToggleCollapse = () => {}
               )
             );
           }
+
           const label = labelFor(item);
           return (
             <NavLink
@@ -131,9 +72,6 @@ export default function Sidebar({ collapsed = false, onToggleCollapse = () => {}
             </NavLink>
           );
         })}
-        {filter && filteredItems.length === 0 && !collapsed && (
-          <div className="sidebar-empty">{t('sidebar.noMatches')}</div>
-        )}
       </nav>
     </aside>
   );

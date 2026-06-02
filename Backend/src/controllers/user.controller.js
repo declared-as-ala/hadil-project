@@ -8,6 +8,13 @@ const buildPublicUser = async (user) => {
   const userData = user.toJSON();
   const employe = await Employe.findOne({ utilisateur: user._id });
   userData.employeeId = employe ? employe._id : null;
+  if (employe) {
+    userData.nom = employe.nom;
+    userData.prenom = employe.prenom;
+    userData.fullName = userData.fullName || `${employe.prenom || ''} ${employe.nom || ''}`.trim();
+  } else {
+    userData.fullName = userData.fullName || (userData.role === 'admin' ? 'Administrateur' : 'User');
+  }
   return userData;
 };
 
@@ -29,6 +36,15 @@ const updateUserRole = asyncHandler(async (req, res) => {
 
   user.role = role;
   await user.save();
+
+  // If role is updated to admin, clean up Employee profile since Admin is not an employee
+  if (role === 'admin') {
+    const employe = await Employe.findOne({ utilisateur: userId });
+    if (employe) {
+      const employeService = require('../services/employe.service');
+      await employeService.deleteEmploye(employe._id);
+    }
+  }
 
   res.status(200).json({
     success: true,
@@ -121,7 +137,7 @@ const getMe = asyncHandler(async (req, res) => {
  * PUT /api/users/me
  */
 const updateMe = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, fullName, matricule, avatar } = req.body;
 
   const user = await User.findById(req.user.id).select('+passwordHash');
   if (!user) {
@@ -145,6 +161,31 @@ const updateMe = asyncHandler(async (req, res) => {
       throw new ApiError(400, 'Password must be at least 8 characters long');
     }
     setFields.passwordHash = await bcrypt.hash(password, 12);
+  }
+
+  // Full Name & synchronization with Employe if exists
+  if (fullName !== undefined) {
+    setFields.fullName = fullName.trim();
+    
+    const employe = await Employe.findOne({ utilisateur: req.user.id });
+    if (employe) {
+      const parts = fullName.trim().split(' ');
+      const prenom = parts[0] || 'Employé';
+      const nom = parts.slice(1).join(' ') || 'Employé';
+      employe.nom = nom;
+      employe.prenom = prenom;
+      await employe.save();
+    }
+  }
+
+  // Matricule
+  if (matricule !== undefined) {
+    setFields.matricule = matricule.trim();
+  }
+
+  // Avatar
+  if (avatar !== undefined) {
+    setFields.avatar = avatar;
   }
 
   if (!Object.keys(setFields).length) {

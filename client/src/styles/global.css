@@ -49,19 +49,7 @@ img {
 /* ============================================
    Layout
    ============================================ */
-.app-layout {
-  display: flex;
-  min-height: 100vh;
-}
 
-.app-main {
-  flex: 1;
-  margin-left: var(--sidebar-width);
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  transition: margin-left var(--transition-slow);
-}
 
 .page-content {
   flex: 1;
