@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
 import TopNav from './TopNav';
+import FloatingChat from '../chat/FloatingChat';
 import './AppLayout.css';
 
 export default function AppLayout({ children }) {
@@ -21,6 +22,7 @@ export default function AppLayout({ children }) {
       {mobileOpen && (
         <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />
       )}
+      <FloatingChat />
     </div>
   );
 }
