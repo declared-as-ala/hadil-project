@@ -4,7 +4,17 @@ const heureSupplementaireService = require('../services/heureSupplementaire.serv
 
 const getAllHeuresSupplementaires = asyncHandler(async (req, res) => {
   const { employeId, dateFrom, dateTo } = req.query;
-  const heures = await heureSupplementaireService.getAllHeuresSupplementaires({ employeId, dateFrom, dateTo });
+  let scopedEmployeId = employeId;
+
+  // Employees can only see their own overtime. Admin/RH can see all.
+  if (req.user?.role === 'employe') {
+    if (!req.user.employeeId) {
+      return res.status(200).json(new ApiResponse(200, [], 'Heures supplementaires retrieved successfully'));
+    }
+    scopedEmployeId = String(req.user.employeeId);
+  }
+
+  const heures = await heureSupplementaireService.getAllHeuresSupplementaires({ employeId: scopedEmployeId, dateFrom, dateTo });
   res.status(200).json(new ApiResponse(200, heures, 'Heures supplementaires retrieved successfully'));
 });
 

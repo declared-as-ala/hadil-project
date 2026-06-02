@@ -14,6 +14,7 @@ class AbsenceService {
     if (filters.employeId) query.employe = filters.employeId;
     if (filters.dateFrom) query.date = { ...query.date, $gte: new Date(filters.dateFrom) };
     if (filters.dateTo) query.date = { ...query.date, $lte: new Date(filters.dateTo) };
+    if (filters.statut) query.statut = filters.statut;
 
     return Absence.find(query)
       .populate(EMPLOYE_POPULATE)
@@ -32,6 +33,7 @@ class AbsenceService {
       date: data.date,
       nombre_des_heures: data.nombre_des_heures,
       raison: data.raison,
+      statut: data.statut || 'non_justifié',
     });
     return Absence.findById(absence._id).populate(EMPLOYE_POPULATE);
   }

@@ -13,20 +13,20 @@
 
 .app-main {
   flex: 1;
-  /* sidebar is fixed at left:16px with width var(--sidebar-width); leave 24px breathing room */
-  margin-left: calc(var(--sidebar-width) + 40px);
-  margin-top: 16px;
-  margin-right: 24px;
-  margin-bottom: 16px;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05);
+  /* sidebar is fixed at left:12px with width var(--sidebar-width); gap of 12px */
+  margin-left: calc(var(--sidebar-width) + 24px);
+  margin-top: 12px;
+  margin-right: 12px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.04);
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 32px);
+  min-height: calc(100vh - 24px);
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-x: hidden;
   overflow-y: auto;
@@ -34,7 +34,7 @@
 
 /* When the sidebar collapses, narrow the main panel's left margin so we don't leave dead space. */
 .app-layout.sidebar-is-collapsed .app-main {
-  margin-left: calc(var(--sidebar-collapsed-width, 88px) + 32px);
+  margin-left: calc(var(--sidebar-collapsed-width, 88px) + 24px);
 }
 
 .page-content {
@@ -56,8 +56,8 @@
 @media (max-width: 768px) {
   .app-main,
   .app-layout.sidebar-is-collapsed .app-main {
-    margin-left: 16px !important;
-    margin-right: 16px !important;
+    margin-left: 12px !important;
+    margin-right: 12px !important;
   }
   .page-content {
     padding: 20px;

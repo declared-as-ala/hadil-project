@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "seed": "node src/seeders/index.js"
+    "seed": "node src/seeders/index.js",
+    "cleanup:legacy-paie": "node cleanup-orphans.js"
   },
   "keywords": [
     "node",

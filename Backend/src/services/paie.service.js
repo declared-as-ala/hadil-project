@@ -1,131 +1,130 @@
-const Paie = require('../models/Paie.model');
 const HeureSupplementaire = require('../models/HeureSupplementaire.model');
 const Employe = require('../models/Employe.model');
+const Affectation = require('../models/Affectation.model');
 const ApiError = require('../utils/ApiError');
 
-// Populate only the employe (with its linked user for name/email)
-const POPULATE_OPTS = [
-  { path: 'employe', populate: { path: 'utilisateur', select: 'email role' } },
-];
+const POPULATE_USER = { path: 'utilisateur', select: 'email role' };
 
 class PaieService {
-  /**
-   * Calculate salary for an employee using data stored directly on the Employee document.
-   * salaire_base and prix_heure_sup are no longer read from a Poste affectation.
-   */
-  async calculerSalaire(employeId, mois, annee) {
-    const employe = await Employe.findById(employeId);
-    if (!employe) {
-      throw new ApiError(404, "Employé introuvable.");
+  _normalizePeriod(mois, annee) {
+    const now = new Date();
+    const parsedMois = Number.parseInt(mois, 10) || now.getMonth() + 1;
+    const parsedAnnee = Number.parseInt(annee, 10) || now.getFullYear();
+
+    if (parsedMois < 1 || parsedMois > 12) {
+      throw new ApiError(400, 'Le mois doit etre compris entre 1 et 12.');
+    }
+    if (parsedAnnee < 1900) {
+      throw new ApiError(400, "L'annee est invalide.");
     }
 
-    let salaire_base = employe.salaire_base ?? 0;
-    let prix_heure_sup = employe.prix_heure_sup ?? 0;
-    let poste = employe.poste || '';
+    return { mois: parsedMois, annee: parsedAnnee };
+  }
 
-    const startDate = new Date(annee, mois - 1, 1);
-    const endDate = new Date(annee, mois, 0, 23, 59, 59);
-
-    // Look for an active affectation during this month
-    const Affectation = require('../models/Affectation.model');
-    const activeAffectation = await Affectation.findOne({
-      employe: employeId,
-      date_debut: { $lte: endDate },
-      $or: [{ date_fin: null }, { date_fin: { $gte: startDate } }]
-    }).populate('poste').sort({ date_debut: -1 });
-
-    if (activeAffectation && activeAffectation.poste) {
-      salaire_base = activeAffectation.poste.salaire_base ?? salaire_base;
-      prix_heure_sup = activeAffectation.poste.prix_heure_sup ?? prix_heure_sup;
-      poste = activeAffectation.poste.nom_poste || poste;
-    }
-
-
-    const heures = await HeureSupplementaire.find({
-      employe: employeId,
-      date: { $gte: startDate, $lte: endDate },
-    });
-
-    const total_heures_sup = heures.reduce((sum, h) => sum + h.heureSupplementaire, 0);
-    const montant_heures_sup = total_heures_sup * prix_heure_sup;
-    const salaire_total = salaire_base + montant_heures_sup;
-
+  _periodRange(mois, annee) {
     return {
-      employe: employeId,
-      poste,
-      mois,
-      annee,
-      salaire_base,
-      total_heures_sup,
-      prix_heure_sup,
-      montant_heures_sup,
-      salaire_total,
+      startDate: new Date(annee, mois - 1, 1),
+      endDate: new Date(annee, mois, 0, 23, 59, 59, 999),
     };
   }
 
-  async genererPaie(employeId, mois, annee) {
-    const salaryData = await this.calculerSalaire(employeId, mois, annee);
-    const paie = await Paie.findOneAndUpdate(
-      { employe: employeId, mois, annee },
-      salaryData,
-      { new: true, upsert: true, runValidators: true }
-    );
-    return Paie.findById(paie._id).populate(POPULATE_OPTS);
+  async _findActiveAffectation(employeId, mois, annee) {
+    const { startDate, endDate } = this._periodRange(mois, annee);
+    return Affectation.findOne({
+      employe: employeId,
+      date_debut: { $lte: endDate },
+      $or: [{ date_fin: null }, { date_fin: { $gte: startDate } }],
+    })
+      .populate('poste')
+      .sort({ date_debut: -1 });
   }
 
-  /**
-   * Generate payroll for all active employees.
-   */
-  async genererToutesPaies(mois, annee) {
-    const employes = await Employe.find({ status: 'actif' });
-    const results = [];
-    for (const emp of employes) {
-      try {
-        const paie = await this.genererPaie(emp._id, mois, annee);
-        results.push(paie);
-      } catch (err) {
-        console.warn(`Paie skipped for ${emp._id}: ${err.message}`);
-      }
+  async _calculateForEmploye(employe, mois, annee) {
+    const { startDate, endDate } = this._periodRange(mois, annee);
+    const activeAffectation = await this._findActiveAffectation(employe._id, mois, annee);
+    const posteDoc = activeAffectation?.poste || null;
+
+    const salaireBase = Number(posteDoc?.salaire_base) || 0;
+    const prixHeureSup = Number(posteDoc?.prix_heure_sup) || 0;
+
+    const heures = await HeureSupplementaire.find({
+      employe: employe._id,
+      date: { $gte: startDate, $lte: endDate },
+    });
+
+    const totalHeuresSup = heures.reduce(
+      (sum, h) => sum + (Number(h.heureSupplementaire) || 0),
+      0
+    );
+    const montantHeuresSup = totalHeuresSup * prixHeureSup;
+    const salaireTotal = salaireBase + montantHeuresSup;
+
+    return {
+      id: `calc-${employe._id}-${annee}-${mois}`,
+      employe,
+      poste: posteDoc?.nom_poste || employe.poste || '',
+      affectation: activeAffectation
+        ? {
+            id: activeAffectation._id,
+            date_debut: activeAffectation.date_debut,
+            date_fin: activeAffectation.date_fin,
+          }
+        : null,
+      mois,
+      annee,
+      salaire_base: salaireBase,
+      total_heures_sup: totalHeuresSup,
+      prix_heure_sup: prixHeureSup,
+      montant_heures_sup: montantHeuresSup,
+      salaire_total: salaireTotal,
+      isCalculated: true,
+    };
+  }
+
+  async calculerSalaire(employeId, mois, annee) {
+    const period = this._normalizePeriod(mois, annee);
+    const employe = await Employe.findById(employeId).populate(POPULATE_USER);
+    if (!employe) {
+      throw new ApiError(404, 'Employe introuvable.');
     }
-    return results;
+    if (employe.utilisateur?.role === 'admin') {
+      throw new ApiError(404, 'Employe introuvable.');
+    }
+
+    return this._calculateForEmploye(employe, period.mois, period.annee);
   }
 
   async getAllPaies(filters = {}) {
-    const query = {};
-    if (filters.employeId) query.employe = filters.employeId;
-    if (filters.mois) query.mois = parseInt(filters.mois);
-    if (filters.annee) query.annee = parseInt(filters.annee);
-    return Paie.find(query).populate(POPULATE_OPTS).sort({ annee: -1, mois: -1 });
+    const period = this._normalizePeriod(filters.mois, filters.annee);
+    const query = filters.employeId ? { _id: filters.employeId } : {};
+    const employes = await Employe.find(query).populate(POPULATE_USER).sort({ nom: 1, prenom: 1 });
+    const result = [];
+
+    for (const employe of employes) {
+      if (employe.utilisateur?.role === 'admin') continue;
+      result.push(await this._calculateForEmploye(employe, period.mois, period.annee));
+    }
+
+    return result;
   }
 
-  async getPaiesByEmploye(employeId) {
-    return Paie.find({ employe: employeId }).populate(POPULATE_OPTS).sort({ annee: -1, mois: -1 });
-  }
+  async getPaiesByEmploye(employeId, filters = {}) {
+    const { annee } = this._normalizePeriod(filters.mois, filters.annee);
+    if (filters.mois) {
+      return [await this.calculerSalaire(employeId, filters.mois, annee)];
+    }
 
-  async getPaieById(id) {
-    const paie = await Paie.findById(id).populate(POPULATE_OPTS);
-    if (!paie) throw new ApiError(404, 'Fiche de paie introuvable.');
-    return paie;
+    const now = new Date();
+    const lastMonth = annee === now.getFullYear() ? now.getMonth() + 1 : 12;
+    const result = [];
+    for (let mois = lastMonth; mois >= 1; mois -= 1) {
+      result.push(await this.calculerSalaire(employeId, mois, annee));
+    }
+    return result;
   }
 
   async getPaieDataForDocument(employeId, mois, annee) {
-    let paie = await Paie.findOne({ employe: employeId, mois, annee }).populate(POPULATE_OPTS);
-    if (!paie) {
-      try {
-        const data = await this.calculerSalaire(employeId, mois, annee);
-        const emp = await Employe.findById(employeId).populate('utilisateur', 'email role');
-        return { ...data, employe: emp };
-      } catch {
-        return null;
-      }
-    }
-    return paie;
-  }
-
-  async deletePaie(id) {
-    const paie = await Paie.findByIdAndDelete(id);
-    if (!paie) throw new ApiError(404, 'Fiche de paie introuvable.');
-    return { message: 'Fiche de paie supprimée avec succès.' };
+    return this.calculerSalaire(employeId, mois, annee);
   }
 }
 

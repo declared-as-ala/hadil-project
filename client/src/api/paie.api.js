@@ -9,13 +9,9 @@ const buildParams = (params) => {
 
 export const paieAPI = {
   getAll: (params) => api.get(`/paies${buildParams(params)}`),
-  getMesPaies: () => api.get('/paies/mes-paies'),
-  getById: (id) => api.get(`/paies/${id}`),
-  generer: (data) => api.post('/paies/generer', data),
-  genererToutes: (data) => api.post('/paies/generer-toutes', data),
+  getMesPaies: (params) => api.get(`/paies/mes-paies${buildParams(params)}`),
   calculer: (params) => api.get(`/paies/calculer${buildParams(params)}`),
   getDocument: (params) => api.get(`/paies/document${buildParams(params)}`),
-  delete: (id) => api.delete(`/paies/${id}`),
 };
 
 export const postesAPI = {

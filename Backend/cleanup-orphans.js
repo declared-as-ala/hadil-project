@@ -2,26 +2,26 @@ const mongoose = require('mongoose');
 const config = require('./src/config/env');
 const Employe = require('./src/models/Employe.model');
 const Affectation = require('./src/models/Affectation.model');
-const Paie = require('./src/models/Paie.model');
 
 async function cleanupOrphans() {
   await mongoose.connect(config.mongoUri);
   console.log('Connected to MongoDB');
 
+  const legacyPaie = await mongoose.connection.db
+    .listCollections({ name: 'paies' })
+    .toArray();
+  if (legacyPaie.length > 0) {
+    await mongoose.connection.db.dropCollection('paies');
+    console.log('Dropped legacy paies collection');
+  } else {
+    console.log('No legacy paies collection found');
+  }
+
   // Get all valid employee IDs
   const employes = await Employe.find({}, '_id');
   const validIds = employes.map(e => e._id.toString());
 
-  // Find orphaned Paies (employe no longer exists)
-  const allPaies = await Paie.find({});
-  const orphanPaies = allPaies.filter(p => !validIds.includes(p.employe.toString()));
-  if (orphanPaies.length > 0) {
-    const ids = orphanPaies.map(p => p._id);
-    await Paie.deleteMany({ _id: { $in: ids } });
-    console.log(`Deleted ${orphanPaies.length} orphaned Paie record(s)`);
-  } else {
-    console.log('No orphaned Paie records found');
-  }
+  console.log('Paie records are no longer persisted; payroll now uses dynamic calculation.');
 
   // Find orphaned Affectations
   const allAff = await Affectation.find({});

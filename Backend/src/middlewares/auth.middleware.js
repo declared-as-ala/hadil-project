@@ -32,6 +32,13 @@ const protect = asyncHandler(async (req, res, next) => {
     // Get associated employee record if it exists
     const employe = await Employe.findOne({ utilisateur: user._id });
     userData.employeeId = employe ? employe._id : null;
+    if (employe) {
+      userData.nom = employe.nom;
+      userData.prenom = employe.prenom;
+      userData.fullName = userData.fullName || `${employe.prenom || ''} ${employe.nom || ''}`.trim();
+    } else {
+      userData.fullName = userData.fullName || (userData.role === 'admin' ? 'Administrateur' : 'User');
+    }
 
     req.user = userData;
 
