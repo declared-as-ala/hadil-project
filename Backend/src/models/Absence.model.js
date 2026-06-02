@@ -20,6 +20,11 @@ const absenceSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    statut: {
+      type: String,
+      enum: ['justifié', 'non_justifié'],
+      default: 'non_justifié',
+    },
   },
   {
     timestamps: true,

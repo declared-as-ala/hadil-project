@@ -20,8 +20,15 @@ class MessageService {
     const query = {};
     // Guard: skip if value is missing or the literal string "null"/"undefined"
     const isValidId = (v) => v && v !== 'null' && v !== 'undefined';
-    if (isValidId(filters.expediteurId)) query.expediteur = filters.expediteurId;
-    if (isValidId(filters.destinataireId)) query.destinataire = filters.destinataireId;
+    if (isValidId(filters.participantId)) {
+      query.$or = [
+        { expediteur: filters.participantId },
+        { destinataire: filters.participantId },
+      ];
+    } else {
+      if (isValidId(filters.expediteurId)) query.expediteur = filters.expediteurId;
+      if (isValidId(filters.destinataireId)) query.destinataire = filters.destinataireId;
+    }
     if (filters.lu !== undefined) query.lu = filters.lu;
 
     return Message.find(query).populate(POPULATE).sort({ date: -1 });

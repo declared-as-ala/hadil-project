@@ -18,6 +18,7 @@ router.use(authorize('admin', 'rh'));
 router.post('/upload', aiCvController.upload.single('cvFile'), aiCvController.uploadCv);
 router.post('/analyze/:id', validate(aiCvParamsSchema), validate(analyzeCvSchema), aiCvController.analyzeCv);
 router.post('/chat/:id', validate(aiCvParamsSchema), validate(chatSchema), aiCvController.chatWithCv);
+router.delete('/:id/chat', validate(aiCvParamsSchema), aiCvController.clearChat);
 router.get('/', validate(listSchema), aiCvController.listCvAnalyses);
 router.get('/:id', validate(aiCvParamsSchema), aiCvController.getCvAnalysisById);
 router.patch('/:id/pipeline', validate(aiCvParamsSchema), validate(updatePipelineSchema), aiCvController.updatePipeline);

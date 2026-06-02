@@ -17,6 +17,7 @@ const EMPTY_CREATE = {
   salaire_base: '',
   prix_heure_sup: '',
   status: 'actif',
+  role: 'employe',
 };
 
 const EMPTY_EDIT = {
@@ -28,10 +29,12 @@ const EMPTY_EDIT = {
   salaire_base: '',
   prix_heure_sup: '',
   status: 'actif',
+  role: 'employe',
 };
 
-export default function EmployeFormPage() {
-  const { id } = useParams();
+export default function EmployeFormPage({ embedded = false, employeId, onSuccess, onCancel } = {}) {
+  const params = useParams();
+  const id = employeId || params.id;
   const isEdit = !!id;
   const navigate = useNavigate();
   const toast = useApiToast();
@@ -74,6 +77,7 @@ export default function EmployeFormPage() {
         salaire_base: d.salaire_base ?? '',
         prix_heure_sup: d.prix_heure_sup ?? '',
         status: d.status || 'actif',
+        role: d.utilisateur?.role || 'employe',
       });
     } catch (err) {
       toast.error(err);
@@ -101,12 +105,12 @@ export default function EmployeFormPage() {
 
   const validate = () => {
     const newErrors = {};
-    if (!form.nom.trim()) newErrors.nom = 'Last name is required';
-    if (!form.prenom.trim()) newErrors.prenom = 'First name is required';
+    if (!form.nom.trim()) newErrors.nom = 'Le nom est obligatoire';
+    if (!form.prenom.trim()) newErrors.prenom = 'Le prénom est obligatoire';
     if (!isEdit) {
-      if (!form.email.trim()) newErrors.email = 'Email is required';
+      if (!form.email.trim()) newErrors.email = 'L\'adresse email est obligatoire';
       if (!form.password || form.password.length < 8)
-        newErrors.password = 'Password must be at least 8 characters';
+        newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
     }
     return newErrors;
   };
@@ -132,12 +136,16 @@ export default function EmployeFormPage() {
         // Remove create-only fields from payload
         const { email, password, ...editPayload } = payload;
         await employesAPI.update(id, editPayload);
-        toast.success('Updated', 'Employee has been updated successfully.');
+        toast.success('Mis à jour', 'L\'employé a été mis à jour avec succès.');
       } else {
         await employesAPI.create(payload);
-        toast.success('Created', 'Employee account and profile created successfully.');
+        toast.success('Créé', 'Le compte et le profil de l\'employé ont été créés avec succès.');
       }
-      navigate('/employes');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/employes');
+      }
     } catch (err) {
       toast.error(err);
     } finally {
@@ -145,45 +153,56 @@ export default function EmployeFormPage() {
     }
   };
 
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      navigate(-1);
+    }
+  };
+
   if (fetchLoading) return <div className="crud-loading"><div className="spinner" /></div>;
 
   return (
     <div>
+      {!embedded && (
       <div className="page-header">
         <div>
-          <h1>{isEdit ? 'Edit Employee' : 'Add Employee'}</h1>
-          <p>{isEdit ? 'Update employee information.' : 'Create a new employee account and profile.'}</p>
+          <h1>{isEdit ? 'Modifier l\'employé' : 'Ajouter un employé'}</h1>
+          <p>{isEdit ? 'Mettre à jour les informations de l\'employé.' : 'Créer un nouveau compte et profil d\'employé.'}</p>
         </div>
       </div>
 
-      <div className="card" style={{ maxWidth: 720 }}>
+      )}
+
+      <div className={embedded ? undefined : 'card'} style={embedded ? undefined : { maxWidth: 720 }}>
         <form onSubmit={handleSubmit}>
 
           {/* ── Identity ─────────────────────────────────────────── */}
           <h3 style={{ marginBottom: 16, fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Identity
+            Identité
           </h3>
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label form-label_required" htmlFor="nom">Last Name</label>
+              <label className="form-label form-label_required" htmlFor="nom">Nom de famille</label>
               <input
                 id="nom"
                 name="nom"
                 className={`form-input ${errors.nom ? 'form-input-error' : ''}`}
-                placeholder="e.g. Dupont"
+                placeholder="ex. Dupont"
                 value={form.nom}
                 onChange={handleChange}
               />
               {errors.nom && <span className="form-error">{errors.nom}</span>}
             </div>
             <div className="form-group">
-              <label className="form-label form-label_required" htmlFor="prenom">First Name</label>
+              <label className="form-label form-label_required" htmlFor="prenom">Prénom</label>
               <input
                 id="prenom"
                 name="prenom"
                 className={`form-input ${errors.prenom ? 'form-input-error' : ''}`}
-                placeholder="e.g. Marie"
+                placeholder="ex. Marie"
                 value={form.prenom}
                 onChange={handleChange}
               />
@@ -191,11 +210,11 @@ export default function EmployeFormPage() {
             </div>
           </div>
 
-          {/* ── Account (create only) ──────────────────────────── */}
+          {/* ── Account (create/edit) ──────────────────────────── */}
           {!isEdit ? (
             <>
               <h3 style={{ marginTop: 24, marginBottom: 16, fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Login Account
+                Compte de connexion
               </h3>
               <div className="form-row">
                 <div className="form-group">
@@ -205,21 +224,21 @@ export default function EmployeFormPage() {
                     name="email"
                     type="email"
                     className={`form-input ${errors.email ? 'form-input-error' : ''}`}
-                    placeholder="employee@company.com"
+                    placeholder="employe@entreprise.com"
                     value={form.email}
                     onChange={handleChange}
                   />
                   {errors.email && <span className="form-error">{errors.email}</span>}
                 </div>
                 <div className="form-group">
-                  <label className="form-label form-label_required" htmlFor="password">Password</label>
+                  <label className="form-label form-label_required" htmlFor="password">Mot de passe</label>
                   <div style={{ position: 'relative' }}>
                     <input
                       id="password"
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       className={`form-input ${errors.password ? 'form-input-error' : ''}`}
-                      placeholder="Min. 8 characters"
+                      placeholder="Min. 8 caractères"
                       value={form.password}
                       onChange={handleChange}
                     />
@@ -236,28 +255,58 @@ export default function EmployeFormPage() {
                     </button>
                   </div>
                   {errors.password && <span className="form-error">{errors.password}</span>}
-                  <span className="form-hint">The employee will use these credentials to log in.</span>
+                  <span className="form-hint">L'employé utilisera ces identifiants pour se connecter.</span>
                 </div>
+              </div>
+              <div className="form-group" style={{ marginTop: 16 }}>
+                <label className="form-label" htmlFor="role">Rôle du compte</label>
+                <select
+                  id="role"
+                  name="role"
+                  className="form-select"
+                  value={form.role}
+                  onChange={handleChange}
+                >
+                  <option value="employe">Employé</option>
+                  <option value="rh">Administrateur RH (RH)</option>
+                </select>
+                <span className="form-hint">Définit les permissions d'accès au système de cet utilisateur.</span>
               </div>
             </>
           ) : (
-            <div className="form-group" style={{ marginTop: 8 }}>
-              <label className="form-label">Login Email</label>
-              <div className="form-input" style={{ backgroundColor: '#f9fafb', color: '#6b7280' }}>
-                {employeeEmail || 'Loading...'}
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Email de connexion</label>
+                <div className="form-input" style={{ backgroundColor: '#f9fafb', color: '#6b7280' }}>
+                  {employeeEmail || 'Loading...'}
+                </div>
+                <span className="form-hint">Les modifications d'email/mot de passe sont gérées séparément.</span>
               </div>
-              <span className="form-hint">Email/password changes are managed separately.</span>
+              <div className="form-group">
+                <label className="form-label" htmlFor="role">Rôle du compte</label>
+                <select
+                  id="role"
+                  name="role"
+                  className="form-select"
+                  value={form.role}
+                  onChange={handleChange}
+                >
+                  <option value="employe">Employé</option>
+                  <option value="rh">Administrateur RH (RH)</option>
+                </select>
+                <span className="form-hint">Changer le rôle mettra à jour ses permissions d'accès.</span>
+              </div>
             </div>
           )}
 
           {/* ── HR Info ───────────────────────────────────────── */}
           <h3 style={{ marginTop: 24, marginBottom: 16, fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            HR Information
+            Informations RH
           </h3>
 
           <div className="form-row">
             <div className="form-group full">
-              <label className="form-label" htmlFor="poste">Position</label>
+              <label className="form-label" htmlFor="poste">Poste</label>
               <select
                 id="poste"
                 name="poste"
@@ -277,7 +326,7 @@ export default function EmployeFormPage() {
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label" htmlFor="telephone">Phone</label>
+              <label className="form-label" htmlFor="telephone">Téléphone</label>
               <input
                 id="telephone"
                 name="telephone"
@@ -288,7 +337,7 @@ export default function EmployeFormPage() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="dateEmbauche">Hire Date</label>
+              <label className="form-label" htmlFor="dateEmbauche">Date d'embauche</label>
               <input
                 id="dateEmbauche"
                 name="dateEmbauche"
@@ -302,12 +351,12 @@ export default function EmployeFormPage() {
 
           {/* ── Salary ────────────────────────────────────────── */}
           <h3 style={{ marginTop: 24, marginBottom: 16, fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Salary
+            Salaire
           </h3>
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label" htmlFor="salaire_base">Base Salary (DA)</label>
+              <label className="form-label" htmlFor="salaire_base">Salaire de base (DT)</label>
               <input
                 id="salaire_base"
                 name="salaire_base"
@@ -320,7 +369,7 @@ export default function EmployeFormPage() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="prix_heure_sup">Overtime Rate (DA/hr)</label>
+              <label className="form-label" htmlFor="prix_heure_sup">Taux heures sup (DT/h)</label>
               <input
                 id="prix_heure_sup"
                 name="prix_heure_sup"
@@ -346,20 +395,20 @@ export default function EmployeFormPage() {
               value={form.status}
               onChange={handleChange}
             >
-              <option value="actif">Active</option>
-              <option value="inactif">Inactive</option>
-              <option value="en_conge">On Leave</option>
+              <option value="actif">Actif</option>
+              <option value="inactif">Inactif</option>
+              <option value="en_conge">En congé</option>
             </select>
           </div>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 28 }}>
-            <button type="button" className="btn btn-outline" onClick={() => navigate(-1)}>
-              Cancel
+            <button type="button" className="btn btn-outline" onClick={handleCancel}>
+              Annuler
             </button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading
-                ? isEdit ? 'Saving...' : 'Creating...'
-                : isEdit ? 'Save' : 'Create Employee'}
+                ? isEdit ? 'Enregistrement...' : 'Création...'
+                : isEdit ? 'Enregistrer' : 'Créer l\'employé'}
             </button>
           </div>
         </form>
