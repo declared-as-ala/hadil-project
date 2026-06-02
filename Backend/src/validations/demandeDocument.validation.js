@@ -7,6 +7,8 @@ const typeDocumentEnum = z.enum([
   'certificat_travail',
 ]);
 
+const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Identifiant de demande invalide');
+
 const createDemandeDocumentSchema = z.object({
   body: z.object({
     typeDocument: typeDocumentEnum,
@@ -23,7 +25,7 @@ const updateStatutDemandeDocumentSchema = z.object({
 
 const demandeDocumentParamsSchema = z.object({
   params: z.object({
-    id: z.string().min(1, 'Document request ID is required'),
+    id: objectIdSchema,
   }),
 });
 
