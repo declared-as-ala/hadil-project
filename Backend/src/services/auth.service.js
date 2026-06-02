@@ -15,6 +15,13 @@ const buildPublicUser = async (user) => {
   const userData = user.toJSON();
   const employe = await Employe.findOne({ utilisateur: user._id });
   userData.employeeId = employe ? employe._id : null;
+  if (employe) {
+    userData.nom = employe.nom;
+    userData.prenom = employe.prenom;
+    userData.fullName = userData.fullName || `${employe.prenom || ''} ${employe.nom || ''}`.trim();
+  } else {
+    userData.fullName = userData.fullName || (userData.role === 'admin' ? 'Administrateur' : 'User');
+  }
   return userData;
 };
 

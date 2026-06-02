@@ -3,7 +3,7 @@ const ApiResponse = require('../utils/ApiResponse');
 const absenceService = require('../services/absence.service');
 
 const getAllAbsences = asyncHandler(async (req, res) => {
-  const { dateFrom, dateTo } = req.query;
+  const { dateFrom, dateTo, statut } = req.query;
   let { employeId } = req.query;
 
   // Employees can only see their own absences. Admin/RH see all.
@@ -14,7 +14,7 @@ const getAllAbsences = asyncHandler(async (req, res) => {
     employeId = String(req.user.employeeId);
   }
 
-  const absences = await absenceService.getAllAbsences({ employeId, dateFrom, dateTo });
+  const absences = await absenceService.getAllAbsences({ employeId, dateFrom, dateTo, statut });
   res.status(200).json(new ApiResponse(200, absences, 'Absences retrieved successfully'));
 });
 

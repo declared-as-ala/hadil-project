@@ -7,6 +7,39 @@ const POPULATE_OPTS = [
 ];
 
 class DemandeDocumentService {
+  _withId(value) {
+    if (!value || typeof value !== 'object') return value;
+
+    if (!value.id && value._id) {
+      value.id = value._id.toString ? value._id.toString() : value._id;
+    }
+
+    return value;
+  }
+
+  _serializeDemande(demande) {
+    if (!demande) return demande;
+
+    const obj = demande.toJSON
+      ? demande.toJSON()
+      : demande.toObject
+        ? demande.toObject({ virtuals: true })
+        : { ...demande };
+
+    this._withId(obj);
+    this._withId(obj.employe);
+    this._withId(obj.employe?.utilisateur);
+
+    return obj;
+  }
+
+  _getEmployeId(demande) {
+    const employe = demande?.employe;
+    if (!employe) return null;
+    if (typeof employe === 'string') return employe;
+    return employe._id || employe.id || null;
+  }
+
   /* ── helpers ─────────────────────────────── */
   async _findEmployeByUserId(userId) {
     const User = require('../models/User.model');
@@ -22,6 +55,43 @@ class DemandeDocumentService {
     return employe;
   }
 
+  async _enrichDemande(demande) {
+    if (!demande) return demande;
+
+    const demObj = this._serializeDemande(demande);
+    const employeId = this._getEmployeId(demande);
+    if (!employeId || !demObj.employe) return demObj;
+
+    let dynamicData = {};
+    try {
+      const paieService = require('./paie.service');
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      dynamicData = await paieService.calculerSalaire(employeId, currentMonth, currentYear);
+
+      demObj.employe = {
+        ...demObj.employe,
+        poste: dynamicData.poste || demObj.employe.poste,
+        salaire_base: dynamicData.salaire_base ?? demObj.employe.salaire_base,
+        salaire_total: dynamicData.salaire_total ?? dynamicData.salaire_base ?? demObj.employe.salaire_base,
+      };
+      return demObj;
+    } catch (err) {
+      console.error('Failed to calculate dynamic salary for populated employee', err);
+      return demObj;
+    }
+  }
+
+  async _enrichDemandes(demandes) {
+    if (!demandes || !demandes.length) return demandes;
+    const enriched = [];
+    for (const d of demandes) {
+      if (!d?.employe) continue;
+      enriched.push(await this._enrichDemande(d));
+    }
+    return enriched;
+  }
+
   /* ── Employee: create ────────────────────── */
   async createDemande(userId, data) {
     const employe = await this._findEmployeByUserId(userId);
@@ -31,15 +101,17 @@ class DemandeDocumentService {
       employe: employe._id,
       status: 'en_attente',
     });
-    return DemandeDocument.findById(demande._id).populate(POPULATE_OPTS);
+    const resDoc = await DemandeDocument.findById(demande._id).populate(POPULATE_OPTS);
+    return this._enrichDemande(resDoc);
   }
 
   /* ── Employee: own requests ──────────────── */
   async getMesDemandes(userId) {
     const employe = await this._findEmployeByUserId(userId);
-    return DemandeDocument.find({ employe: employe._id })
+    const demandes = await DemandeDocument.find({ employe: employe._id })
       .populate(POPULATE_OPTS)
       .sort({ createdAt: -1 });
+    return this._enrichDemandes(demandes);
   }
 
   /* ── Admin / RH: all requests (with filter) */
@@ -47,9 +119,10 @@ class DemandeDocumentService {
     const query = {};
     if (filters.status) query.status = filters.status;
     if (filters.employeId) query.employe = filters.employeId;
-    return DemandeDocument.find(query)
+    const demandes = await DemandeDocument.find(query)
       .populate(POPULATE_OPTS)
       .sort({ createdAt: -1 });
+    return this._enrichDemandes(demandes);
   }
 
   /* ── Admin / RH: update status ───────────── */
@@ -60,7 +133,7 @@ class DemandeDocumentService {
       { new: true, runValidators: true }
     ).populate(POPULATE_OPTS);
     if (!demande) throw new ApiError(404, 'Demande de document introuvable.');
-    return demande;
+    return this._enrichDemande(demande);
   }
 
   /* ── Admin: delete any ───────────────────── */
