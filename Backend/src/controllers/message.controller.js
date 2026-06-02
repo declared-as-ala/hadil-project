@@ -5,8 +5,8 @@ const messageService = require('../services/message.service');
 const Employe = require('../models/Employe.model');
 
 const getAllMessages = asyncHandler(async (req, res) => {
-  const { expediteurId, destinataireId, lu } = req.query;
-  const messages = await messageService.getAllMessages({ expediteurId, destinataireId, lu });
+  const { expediteurId, destinataireId, participantId, lu } = req.query;
+  const messages = await messageService.getAllMessages({ expediteurId, destinataireId, participantId, lu });
   res.status(200).json(new ApiResponse(200, messages, 'Messages retrieved successfully'));
 });
 

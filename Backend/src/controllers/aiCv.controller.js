@@ -23,6 +23,11 @@ const chatWithCv = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, result, 'Chat response generated'));
 });
 
+const clearChat = asyncHandler(async (req, res) => {
+  await aiCvService.clearChat(req.params.id);
+  res.status(200).json(new ApiResponse(200, null, 'Chat history cleared successfully'));
+});
+
 const listCvAnalyses = asyncHandler(async (req, res) => {
   const data = await aiCvService.list(req.query);
   res.status(200).json(new ApiResponse(200, data, 'CV analyses retrieved successfully'));
@@ -55,6 +60,7 @@ module.exports = {
   uploadCv,
   analyzeCv,
   chatWithCv,
+  clearChat,
   listCvAnalyses,
   getCvAnalysisById,
   updatePipeline,

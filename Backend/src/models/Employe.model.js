@@ -103,12 +103,7 @@ employeSchema.virtual('messagesRecus', {
   foreignField: 'destinataire',
 });
 
-// Virtual for stagiaires this employee supervises
-employeSchema.virtual('stagiairesEncadres', {
-  ref: 'Stagiaire',
-  localField: '_id',
-  foreignField: 'encadrant',
-});
+
 
 employeSchema.set('toJSON', { virtuals: true });
 employeSchema.set('toObject', { virtuals: true });
