@@ -3,7 +3,7 @@ const config = require('./src/config/env');
 const Poste = require('./src/models/Poste.model');
 const Affectation = require('./src/models/Affectation.model');
 
-const ROLE_NAMES = ['employe', 'employé', 'admin', 'rh', 'stagiaire', 'manager'];
+const ROLE_NAMES = ['employe', 'employé', 'admin', 'rh', 'manager'];
 
 async function cleanup() {
   await mongoose.connect(config.mongoUri);

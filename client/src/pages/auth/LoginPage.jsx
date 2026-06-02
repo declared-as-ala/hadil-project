@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../components/common/Toast';
 import './Auth.css';
@@ -24,8 +24,8 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    if (!formData.password) newErrors.password = 'Password is required';
+    if (!formData.email.trim()) newErrors.email = 'L\'e-mail est obligatoire';
+    if (!formData.password) newErrors.password = 'Le mot de passe est obligatoire';
     if (Object.keys(newErrors).length) {
       setErrors(newErrors);
       return;
@@ -34,10 +34,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(formData.email, formData.password);
-      toast.success('Welcome back!', 'You have logged in successfully.');
+      toast.success('Bon retour !', 'Vous vous êtes connecté avec succès.');
       navigate('/dashboard');
     } catch (err) {
-      toast.error('Login failed', err.message || 'Invalid email or password.');
+      toast.error('Échec de la connexion', err.message || 'E-mail ou mot de passe incorrect.');
     } finally {
       setLoading(false);
     }
@@ -59,23 +59,17 @@ export default function LoginPage() {
             {/* Branding centered in the card */}
             <div className="auth-card-branding">
               <div className="auth-brand-logo-icon">&#127970;</div>
-              <div className="auth-brand-logo-text">HR System</div>
-            </div>
-
-            {/* Toggle Tabs */}
-            <div className="auth-tabs">
-              <Link to="/login" className="auth-tab active">Sign In</Link>
-              <Link to="/signup" className="auth-tab">Sign Up</Link>
+              <div className="auth-brand-logo-text">Système RH</div>
             </div>
 
             <div className="auth-form-header">
-              <h2 className="auth-form-title">Welcome back</h2>
+              <h2 className="auth-form-title">Bon retour</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="auth-form" noValidate>
               <div className={`auth-input-group ${errors.email ? 'auth-input-error' : ''} ${focusedField === 'email' ? 'auth-input-focused' : ''}`}>
                 <label className="auth-input-label" htmlFor="email">
-                  Email address
+                  Adresse e-mail
                 </label>
                 <div className="auth-input-wrapper">
                   <span className="auth-input-icon">&#9993;</span>
@@ -84,7 +78,7 @@ export default function LoginPage() {
                     name="email"
                     type="email"
                     className="auth-input"
-                    placeholder="you@company.com"
+                    placeholder="vous@entreprise.com"
                     value={formData.email}
                     onChange={handleChange}
                     onFocus={() => setFocusedField('email')}
@@ -98,7 +92,7 @@ export default function LoginPage() {
               <div className={`auth-input-group ${errors.password ? 'auth-input-error' : ''} ${focusedField === 'password' ? 'auth-input-focused' : ''}`}>
                 <div className="auth-input-label-row">
                   <label className="auth-input-label" htmlFor="password">
-                    Password
+                    Mot de passe
                   </label>
                 </div>
                 <div className="auth-input-wrapper">
@@ -108,7 +102,7 @@ export default function LoginPage() {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     className="auth-input"
-                    placeholder="Enter your password"
+                    placeholder="Entrez votre mot de passe"
                     value={formData.password}
                     onChange={handleChange}
                     onFocus={() => setFocusedField('password')}
@@ -135,11 +129,11 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <span className="auth-submit-spinner" />
-                    Signing in&hellip;
+                    Connexion en cours&hellip;
                   </>
                 ) : (
                   <>
-                    Sign in
+                    Se connecter
                     <span className="auth-submit-arrow">&rarr;</span>
                   </>
                 )}
@@ -147,7 +141,7 @@ export default function LoginPage() {
             </form>
 
             <div className="auth-divider">
-              <span>Protected by enterprise-grade security</span>
+              <span>Protégé par une sécurité de niveau entreprise</span>
             </div>
           </div>
         </div>
