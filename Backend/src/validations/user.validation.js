@@ -2,8 +2,8 @@ const { z } = require('zod');
 
 const updateRoleSchema = {
   body: z.object({
-    role: z.enum(['admin', 'rh', 'employe', 'stagiaire'], {
-      errorMap: () => ({ message: 'Role must be one of: admin, rh, employe, stagiaire' }),
+    role: z.enum(['admin', 'rh', 'employe'], {
+      errorMap: () => ({ message: 'Role must be one of: admin, rh, employe' }),
     }),
   }),
   params: z.object({

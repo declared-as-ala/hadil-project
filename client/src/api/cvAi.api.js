@@ -33,6 +33,7 @@ export const cvAiAPI = {
   getAll: (params = {}) => api.get(`/hr/cv-ai${buildParams(params)}`),
   getById: (id) => api.get(`/hr/cv-ai/${id}`),
   delete: (id) => api.delete(`/hr/cv-ai/${id}`),
+  clearChat: (id) => api.delete(`/hr/cv-ai/${id}/chat`),
   updatePipeline: (id, payload) => api.patch(`/hr/cv-ai/${id}/pipeline`, payload),
   exportPdfUrl: (id) => `${API_BASE_URL}/hr/cv-ai/${id}/export-pdf`,
 };

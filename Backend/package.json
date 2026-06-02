@@ -4,9 +4,10 @@
   "description": "Production-ready Node.js + Express auth backend with MongoDB, JWT, and MVC architecture",
   "main": "src/app.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "seed": "node src/seeders/index.js"
+    "start": "node api.js && node src/app.js",
+    "dev": "node api.js && nodemon src/app.js",
+    "seed": "node src/seeders/index.js",
+    "cleanup:legacy-paie": "node cleanup-orphans.js"
   },
   "keywords": [
     "node",

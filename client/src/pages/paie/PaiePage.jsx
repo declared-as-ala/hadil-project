@@ -1,7 +1,8 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { paieAPI, postesAPI, affectationsAPI } from '../../api/paie.api';
-import { contratsAPI } from '../../api/contrats.api';
+
 import { employesAPI } from '../../api/employes.api';
 import { useApiToast } from '../../components/common/Toast';
 import { ROLES } from '../../utils/constants';
@@ -14,14 +15,16 @@ const now = new Date();
 
 export default function PaiePage() {
   const { role } = useContext(AuthContext);
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('search') || '';
   const isAdmin = role === ROLES.ADMIN || role === ROLES.RH;
-  return isAdmin ? <AdminPaieView /> : <EmployeePaieView />;
+  return isAdmin ? <AdminPaieView externalSearch={urlSearch} /> : <EmployeePaieView />;
 }
 
 // ══════════════════════════════════════════════════
 // ADMIN VIEW
 // ══════════════════════════════════════════════════
-function AdminPaieView() {
+function AdminPaieView({ externalSearch = '' }) {
   const toast = useApiToast();
   const [tab, setTab] = useState('paies');
   const [mois, setMois] = useState(now.getMonth() + 1);
@@ -30,10 +33,10 @@ function AdminPaieView() {
   const [syncing, setSyncing] = useState(false);
 
   const [paies, setPaies] = useState([]);
+  const [paieSearch, setPaieSearch] = useState(externalSearch);
   const [postes, setPostes] = useState([]);
   const [affectations, setAffectations] = useState([]);
   const [employes, setEmployes] = useState([]);
-  const [contrats, setContrats] = useState([]);
 
   const [showPosteForm, setShowPosteForm] = useState(false);
   const [posteForm, setPosteForm] = useState({ nom_poste: '', salaire_base: '', prix_heure_sup: '' });
@@ -62,36 +65,20 @@ function AdminPaieView() {
     } catch (e) { toast.error(e); } finally { setLoading(false); }
   }, []);
 
-  const loadContrats = useCallback(async () => {
-    setLoading(true);
-    try { const r = await contratsAPI.getAll(); setContrats(r.data || []); }
-    catch (e) { toast.error(e); } finally { setLoading(false); }
-  }, []);
+
 
   useEffect(() => {
     if (tab === 'paies') loadPaies();
     else if (tab === 'postes') loadPostes();
     else if (tab === 'affectations') loadAffectations();
-    else if (tab === 'contrats') loadContrats();
-  }, [tab, loadPaies, loadPostes, loadAffectations, loadContrats]);
+  }, [tab, loadPaies, loadPostes, loadAffectations]);
 
-  async function handleRenewContrat(id) {
-    if (!window.confirm('Renouveler ce contrat ?')) return;
-    try {
-      await contratsAPI.renouveler(id, '');
-      toast.success('Contrat renouvelé');
-      loadContrats();
-    } catch (e) { toast.error(e); }
-  }
+  useEffect(() => {
+    setPaieSearch(externalSearch);
+    if (externalSearch) setTab('paies');
+  }, [externalSearch]);
 
-  async function handleDeleteContrat(id) {
-    if (!window.confirm('Supprimer ce contrat ?')) return;
-    try {
-      await contratsAPI.delete(id);
-      toast.success('Contrat supprimé');
-      loadContrats();
-    } catch (e) { toast.error(e); }
-  }
+
 
   // ── Sync from existing employees ──────────────────
   async function handleSync() {
@@ -104,15 +91,6 @@ function AdminPaieView() {
       loadAffectations();
     } catch (e) { toast.error(e); }
     finally { setSyncing(false); }
-  }
-
-  async function handleGenererToutes() {
-    setLoading(true);
-    try {
-      const r = await paieAPI.genererToutes({ mois, annee });
-      toast.success('Paies générées', `${(r.data || []).length} fiche(s) générée(s)`);
-      loadPaies();
-    } catch (e) { toast.error(e); } finally { setLoading(false); }
   }
 
   async function handleCreatePoste(e) {
@@ -153,20 +131,33 @@ function AdminPaieView() {
     try { await affectationsAPI.delete(id); toast.success('Supprimé'); loadAffectations(); } catch (e) { toast.error(e); }
   }
 
-  const totalSalaires = paies.reduce((s, p) => s + (p.salaire_total || 0), 0);
-  const totalHS = paies.reduce((s, p) => s + (p.total_heures_sup || 0), 0);
+  const searchValue = paieSearch.trim().toLowerCase();
+  const filteredPaies = searchValue
+    ? paies.filter((p) => {
+        const emp = p.employe || {};
+        const searchable = [
+          emp.nom,
+          emp.prenom,
+          emp.utilisateur?.email,
+          p.poste,
+        ].filter(Boolean).join(' ').toLowerCase();
+        return searchable.includes(searchValue);
+      })
+    : paies;
+  const totalSalaires = filteredPaies.reduce((s, p) => s + (p.salaire_total || 0), 0);
+  const totalHS = filteredPaies.reduce((s, p) => s + (p.total_heures_sup || 0), 0);
 
   return (
     <div>
       {/* Hero */}
       <div className="paie-hero">
-        <div><h1>Gestion de Paie</h1><p>Gérez les postes, affectations et générez les fiches de paie.</p></div>
+        <div><h1>Gestion de Paie</h1><p>Consultez les fiches calculees depuis les postes, affectations et heures supplementaires.</p></div>
         <div className="paie-hero-icon">💰</div>
       </div>
 
       {/* Tabs */}
       <div className="paie-tabs">
-        {[['paies','💰 Fiches de paie'],['postes','🏷️ Postes'],['affectations','🔗 Affectations'],['contrats','📄 Contrats']].map(([k,l]) => (
+        {[['paies','💰 Fiches de paie'],['postes','🏷️ Postes'],['affectations','🔗 Affectations']].map(([k,l]) => (
           <button key={k} className={`paie-tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
@@ -184,12 +175,18 @@ function AdminPaieView() {
               {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
-          <button className="btn-generate" onClick={loadPaies} disabled={loading}>🔍 Afficher</button>
-          <button className="btn-generate btn-generate-all" onClick={handleGenererToutes} disabled={loading}>⚡ Générer toutes les paies</button>
+          <div className="form-group"><label>Employé</label>
+            <input
+              type="text"
+              value={paieSearch}
+              onChange={e => setPaieSearch(e.target.value)}
+              placeholder="Nom, prénom ou email..."
+            />
+          </div>
         </div>
 
         <div className="paie-stats">
-          {[['purple','👥','Employés',paies.length],['green','💰','Total salaires',formatDT(totalSalaires)],
+          {[['purple','👥','Employés',filteredPaies.length],['green','💰','Total salaires',formatDT(totalSalaires)],
             ['blue','⏰','Total heures sup',totalHS+'h'],['orange','📅','Période',MOIS_LABELS[mois]+' '+annee]
           ].map(([c,ic,l,v]) => (
             <div key={l} className="paie-stat-card">
@@ -204,15 +201,21 @@ function AdminPaieView() {
           <div className="paie-empty">
             <div className="paie-empty-icon">📭</div>
             <h3>Aucune fiche de paie</h3>
-            <p>Cliquez sur «Générer toutes les paies» pour créer les fiches du mois.</p>
+            <p>Aucune fiche calculable pour cette periode. Verifiez les affectations et les postes.</p>
+          </div>
+        ) : filteredPaies.length === 0 ? (
+          <div className="paie-empty">
+            <div className="paie-empty-icon">🔍</div>
+            <h3>Aucun employé trouvé</h3>
+            <p>Essayez avec un autre nom, prénom, email ou poste.</p>
           </div>
         ) : (
           <div className="paie-table-container">
-            <div className="paie-table-header"><h2>Fiches de paie — {MOIS_LABELS[mois]} {annee}</h2><span>{paies.length} fiche(s)</span></div>
+            <div className="paie-table-header"><h2>Fiches de paie calculees — {MOIS_LABELS[mois]} {annee}</h2><span>{filteredPaies.length} / {paies.length} fiche(s)</span></div>
             <table className="paie-table">
               <thead><tr><th>Employé</th><th>Poste</th><th>Salaire base</th><th>Heures sup</th><th>Montant HS</th><th>Salaire total</th></tr></thead>
               <tbody>
-                {paies.map(p => {
+                {filteredPaies.map(p => {
                   const emp = p.employe;
                   return (
                     <tr key={p.id}>
@@ -430,77 +433,7 @@ function AdminPaieView() {
         )}
       </div>}
 
-      {/* ── TAB: Contrats (mirrored from active Affectations) ───────── */}
-      {tab === 'contrats' && <div className="paie-section">
-        <div className="paie-section-header">
-          <h2>📄 Contrats</h2>
-          <span style={{fontSize:'0.85rem',color:'var(--gray-500)'}}>
-            Contrats créés et synchronisés automatiquement avec les affectations actives.
-          </span>
-        </div>
 
-        <div style={{background:'rgba(99,102,241,0.06)',border:'1.5px solid rgba(99,102,241,0.2)',borderRadius:'10px',padding:'0.75rem 1rem',marginBottom:'1rem',fontSize:'0.85rem',color:'var(--gray-600)'}}>
-          💡 Chaque affectation crée un contrat actif. Modifier le poste d'un employé via <strong>Affectations</strong> ferme l'ancien contrat et en crée un nouveau avec le poste et salaire à jour.
-        </div>
-
-        {loading ? <div className="paie-loading"><div className="spinner"/></div>
-        : contrats.length === 0 ? (
-          <div className="paie-empty">
-            <div className="paie-empty-icon">📄</div>
-            <h3>Aucun contrat</h3>
-            <p>Créez une affectation pour générer un contrat automatiquement.</p>
-          </div>
-        ) : (
-          <div className="paie-table-container">
-            <div className="paie-table-header"><h2>Contrats</h2><span>{contrats.length} contrat(s)</span></div>
-            <table className="paie-table">
-              <thead><tr><th>Employé</th><th>Type</th><th>Poste</th><th>Salaire</th><th>Début</th><th>Fin</th><th>Statut</th><th>Actions</th></tr></thead>
-              <tbody>
-                {contrats.map(c => {
-                  const emp = c.employe;
-                  const isActive = c.status === 'actif';
-                  return (
-                    <tr key={c.id}>
-                      <td>
-                        <div className="paie-employee-cell">
-                          <div className="paie-avatar">{(emp?.nom?.[0]||'?').toUpperCase()}</div>
-                          <div>
-                            <div className="paie-employee-name">{emp?.prenom} {emp?.nom}</div>
-                            <div className="paie-employee-email">{emp?.utilisateur?.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td><span className="paie-badge">{c.type}</span></td>
-                      <td>{c.posteTravail || '—'}</td>
-                      <td>{c.salaire != null ? `${Number(c.salaire).toFixed(2)} DT` : '—'}</td>
-                      <td>{formatDate(c.date_de_debut)}</td>
-                      <td>{c.type === 'CDD' ? formatDate(c.date_de_fin) : <span style={{color:'var(--gray-400)'}}>—</span>}</td>
-                      <td>
-                        <span className="paie-badge" style={{background:isActive?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)',color:isActive?'#059669':'#ef4444'}}>
-                          {isActive ? '✅ Actif' : c.status}
-                        </span>
-                      </td>
-                      <td style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
-                        <button
-                          onClick={() => handleRenewContrat(c.id)}
-                          disabled={!isActive}
-                          style={{fontSize:'0.75rem',padding:'0.3rem 0.7rem',borderRadius:'6px',border:'none',background:isActive?'#7c3aed':'#d1d5db',color:'#fff',cursor:isActive?'pointer':'not-allowed'}}
-                          title="Renouveler le contrat"
-                        >🔄 Renouveler</button>
-                        <button
-                          onClick={() => handleDeleteContrat(c.id)}
-                          style={{fontSize:'0.75rem',padding:'0.3rem 0.7rem',borderRadius:'6px',border:'none',background:'#ef4444',color:'#fff',cursor:'pointer'}}
-                          title="Supprimer le contrat"
-                        >🗑️</button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>}
     </div>
   );
 }
@@ -512,28 +445,42 @@ function EmployeePaieView() {
   const toast = useApiToast();
   const [paies, setPaies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [annee, setAnnee] = useState(now.getFullYear());
 
-  useEffect(() => {
-    paieAPI.getMesPaies()
+  const loadMesPaies = useCallback(() => {
+    setLoading(true);
+    paieAPI.getMesPaies({ annee })
       .then(r => setPaies(r.data || []))
       .catch(e => toast.error(e))
       .finally(() => setLoading(false));
-  }, []); // eslint-disable-line
+  }, [annee]);
+
+  useEffect(() => {
+    loadMesPaies();
+  }, [loadMesPaies]);
 
   if (loading) return <div className="paie-loading"><div className="spinner"/></div>;
 
   return (
     <div>
       <div className="paie-hero">
-        <div><h1>Mes Fiches de Paie</h1><p>Consultez l'historique de vos salaires.</p></div>
+        <div><h1>Mes Fiches de Paie</h1><p>Consultez vos salaires calcules depuis votre poste et vos heures supplementaires.</p></div>
         <div className="paie-hero-icon">💵</div>
+      </div>
+
+      <div className="paie-action-bar">
+        <div className="form-group"><label>Annee</label>
+          <select value={annee} onChange={e => setAnnee(Number(e.target.value))}>
+            {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
       </div>
 
       {paies.length === 0 ? (
         <div className="paie-empty">
           <div className="paie-empty-icon">📭</div>
           <h3>Aucune fiche de paie</h3>
-          <p>Vos fiches apparaîtront ici une fois générées par l'administration.</p>
+          <p>Aucune fiche calculable pour cette annee. Verifiez votre affectation de poste.</p>
         </div>
       ) : (
         <div className="paie-cards-grid">
