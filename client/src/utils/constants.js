@@ -4,7 +4,6 @@ export const ROLES = {
   ADMIN: 'admin',
   RH: 'rh',
   EMPLOYE: 'employe',
-  STAGIAIRE: 'stagiaire',
   USER: 'user',
 };
 
@@ -12,7 +11,6 @@ export const ROLE_LABELS = {
   admin: 'Administrator',
   rh: 'HR Manager',
   employe: 'Employee',
-  stagiaire: 'Intern',
   user: 'User',
 };
 
@@ -28,11 +26,7 @@ export const EMPLOYE_STATUS = {
   EN_CONGE: 'en_conge',
 };
 
-export const STAGIAIRE_STATUS = {
-  ACTIF: 'actif',
-  TERMINE: 'termine',
-  ANNULE: 'annule',
-};
+
 
 export const CONGE_TYPES = {
   ANNUAL: 'annual',

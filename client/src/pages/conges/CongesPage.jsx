@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { congesAPI } from '../../api/conges.api';
 import { employesAPI } from '../../api/employes.api';
 import { useApiToast } from '../../components/common/Toast';
@@ -20,9 +21,9 @@ const LEAVE_TYPE_ICONS = {
 };
 
 const STATUS_CONFIG = {
-  pending: { label: 'Pending', className: 'badge-pending' },
-  approved: { label: 'Approved', className: 'badge-approved' },
-  rejected: { label: 'Rejected', className: 'badge-rejected' },
+  pending: { label: 'En attente', className: 'badge-pending' },
+  approved: { label: 'Approuvé', className: 'badge-approved' },
+  rejected: { label: 'Refusé', className: 'badge-rejected' },
 };
 
 function StatusBadge({ status }) {
@@ -51,9 +52,10 @@ const EMPTY_FORM = {
 
 // ─── Employee View ───────────────────────────────────────────────────────────
 
-function EmployeeView() {
+function EmployeeView({ externalSearch = '' }) {
   const toast = useApiToast();
   const [requests, setRequests] = useState([]); // Ma liste de congés
+  const [search, setSearch] = useState(externalSearch);
   const [loading, setLoading] = useState(true);  // Pendant chargement
   const [showForm, setShowForm] = useState(false); // Formulaire visible ?
   const [form, setForm] = useState(EMPTY_FORM);// Données nouveau congé
@@ -61,6 +63,10 @@ function EmployeeView() {
   const [submitting, setSubmitting] = useState(false);// Pendant envoi
 
   useEffect(() => { loadMyRequests(); }, []);
+
+  useEffect(() => {
+    setSearch(externalSearch);
+  }, [externalSearch]);
 
   async function loadMyRequests() {
     setLoading(true);
@@ -79,13 +85,13 @@ function EmployeeView() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.date_debut || !form.periode || !form.type_conge) {
-      toast.error({ message: 'Please fill in all required fields.' });
+      toast.error({ message: 'Veuillez remplir tous les champs obligatoires.' });
       return;
     }
     setSubmitting(true);
     try {
       await congesAPI.create({ ...form, periode: Number(form.periode) });
-      toast.success('Submitted', 'Your leave request has been sent for review.');
+      toast.success('Soumis', 'Votre demande de congé a été envoyée pour examen.');
       setShowForm(false);
       setForm(EMPTY_FORM);
       loadMyRequests();
@@ -101,13 +107,13 @@ function EmployeeView() {
   async function handleUpdate(e) {
     e.preventDefault();
     if (!editForm.date_debut || !editForm.periode || !editForm.type_conge) {
-      toast.error({ message: 'Please fill in all required fields.' });
+      toast.error({ message: 'Veuillez remplir tous les champs obligatoires.' });
       return;
     }
     setSubmitting(true);
     try {
       await congesAPI.updateMy(editForm.id, { ...editForm, periode: Number(editForm.periode) });
-      toast.success('Updated', 'Your leave request has been updated.');
+      toast.success('Mis à jour', 'Votre demande de congé a été mise à jour.');
       setEditForm(null);
       loadMyRequests();
     } catch (err) { toast.error(err); }
@@ -131,6 +137,18 @@ function EmployeeView() {
     rejected: requests.filter(r => r.status === 'rejected').length,
   };
 
+  const filteredRequests = requests.filter((req) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    const searchable = [
+      req.motif,
+      req.status,
+      req.type_conge,
+      formatLabel(req.type_conge),
+    ].filter(Boolean).join(' ').toLowerCase();
+    return searchable.includes(q);
+  });
+
   return (
     <div className="lr-page">
       {/* Header */}
@@ -146,10 +164,10 @@ function EmployeeView() {
 
       {/* Summary cards */}
       <div className="lr-stats-row">
-        <StatCard icon="📋" label="Total Requests" value={counts.total} color="#6366f1" />
-        <StatCard icon="⏳" label="Pending" value={counts.pending} color="#f59e0b" />
-        <StatCard icon="✅" label="Approved" value={counts.approved} color="#10b981" />
-        <StatCard icon="❌" label="Rejected" value={counts.rejected} color="#ef4444" />
+        <StatCard icon="📋" label="Total des demandes" value={counts.total} color="#6366f1" />
+        <StatCard icon="⏳" label="En attente" value={counts.pending} color="#f59e0b" />
+        <StatCard icon="✅" label="Approuvées" value={counts.approved} color="#10b981" />
+        <StatCard icon="❌" label="Refusées" value={counts.rejected} color="#ef4444" />
       </div>
 
       {/* List */}
@@ -158,12 +176,18 @@ function EmployeeView() {
       ) : requests.length === 0 ? (
         <div className="lr-empty">
           <div className="lr-empty-icon">🏖️</div>
-          <h3>No leave requests yet</h3>
-          <p>Click "Request Leave" to submit your first request.</p>
+          <h3>Aucune demande de congé pour le moment</h3>
+          <p>Cliquez sur "Demande de congé" pour soumettre votre première demande.</p>
+        </div>
+      ) : filteredRequests.length === 0 ? (
+        <div className="lr-empty">
+          <div className="lr-empty-icon">🔍</div>
+          <h3>Aucun resultat trouve</h3>
+          <p>Essayez avec un autre mot cle.</p>
         </div>
       ) : (
         <div className="lr-cards-grid">
-          {requests.map(req => (
+          {filteredRequests.map(req => (
             <div key={req.id} className="lr-request-card">
               <div className="lr-request-card-header">
                 <div className="lr-type-pill">
@@ -175,7 +199,7 @@ function EmployeeView() {
                     <button
                       onClick={() => handleEditClick(req)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
-                      title="Edit Request"
+                      title="Modifier la demande"
                     >
                       ✏️
                     </button>
@@ -186,21 +210,21 @@ function EmployeeView() {
               <div className="lr-request-card-body">
                 <div className="lr-request-meta">
                   <div className="lr-meta-item">
-                    <span className="lr-meta-label">Start Date</span>
+                    <span className="lr-meta-label">Date de début</span>
                     <span className="lr-meta-value">{formatDate(req.date_debut)}</span>
                   </div>
                   <div className="lr-meta-item">
-                    <span className="lr-meta-label">Duration</span>
+                    <span className="lr-meta-label">Durée</span>
                     <span className="lr-meta-value">{formatDays(req.periode)}</span>
                   </div>
                   <div className="lr-meta-item">
-                    <span className="lr-meta-label">Submitted</span>
+                    <span className="lr-meta-label">Soumise le</span>
                     <span className="lr-meta-value">{formatDate(req.createdAt)}</span>
                   </div>
                 </div>
                 {req.motif && (
                   <div className="lr-reason">
-                    <span className="lr-meta-label">Reason</span>
+                    <span className="lr-meta-label">Motif</span>
                     <p>{req.motif}</p>
                   </div>
                 )}
@@ -214,14 +238,14 @@ function EmployeeView() {
       <Modal
         isOpen={showForm}
         onClose={() => { setShowForm(false); setForm(EMPTY_FORM); }}
-        title="New Leave Request"
+        title="Nouvelle demande de congé"
         footer={
           <>
             <button className="lr-btn lr-btn-outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }}>
-              Cancel
+              Annuler
             </button>
             <button className="lr-btn lr-btn-primary" onClick={handleSubmit} disabled={submitting}>
-              {submitting ? 'Submitting…' : 'Submit Request'}
+              {submitting ? 'Envoi...' : 'Soumettre la demande'}
             </button>
           </>
         }
@@ -229,7 +253,7 @@ function EmployeeView() {
         <form className="lr-form" onSubmit={handleSubmit}>
           <div className="lr-form-row">
             <div className="lr-form-group">
-              <label className="lr-label required">Start Date</label>
+              <label className="lr-label required">Date de début</label>
               <input
                 type="date"
                 name="date_debut"
@@ -241,7 +265,7 @@ function EmployeeView() {
               />
             </div>
             <div className="lr-form-group">
-              <label className="lr-label required">Duration (days)</label>
+              <label className="lr-label required">Durée (jours)</label>
               <input
                 type="number"
                 name="periode"
@@ -256,7 +280,7 @@ function EmployeeView() {
             </div>
           </div>
           <div className="lr-form-group">
-            <label className="lr-label required">Leave Type</label>
+            <label className="lr-label">Type de congé</label>
             <select name="type_conge" className="lr-select" value={form.type_conge} onChange={handleChange} required>
               {Object.values(CONGE_TYPES).map(t => (
                 <option key={t} value={t}>{LEAVE_TYPE_ICONS[t]} {formatLabel(t)}</option>
@@ -264,14 +288,14 @@ function EmployeeView() {
             </select>
           </div>
           <div className="lr-form-group">
-            <label className="lr-label">Reason <span className="lr-optional">(optional)</span></label>
+            <label className="lr-label">Motif <span className="lr-optional">(optionnel)</span></label>
             <textarea
               name="motif"
               className="lr-textarea"
               value={form.motif}
               onChange={handleChange}
               rows={3}
-              placeholder="Briefly describe the reason for your leave…"
+              placeholder="Décrivez brièvement le motif de votre congé..."
             />
           </div>
         </form>
@@ -281,14 +305,14 @@ function EmployeeView() {
       <Modal
         isOpen={!!editForm}
         onClose={() => setEditForm(null)}
-        title="Edit Leave Request"
+        title="Modifier la demande de congé"
         footer={
           <>
             <button className="lr-btn lr-btn-outline" onClick={() => setEditForm(null)}>
-              Cancel
+              Annuler
             </button>
             <button className="lr-btn lr-btn-primary" onClick={handleUpdate} disabled={submitting}>
-              {submitting ? 'Saving…' : 'Save Changes'}
+              {submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
             </button>
           </>
         }
@@ -297,7 +321,7 @@ function EmployeeView() {
           <form className="lr-form" onSubmit={handleUpdate}>
             <div className="lr-form-row">
               <div className="lr-form-group">
-                <label className="lr-label required">Start Date</label>
+                <label className="lr-label required">Date de début</label>
                 <input
                   type="date"
                   name="date_debut"
@@ -309,7 +333,7 @@ function EmployeeView() {
                 />
               </div>
               <div className="lr-form-group">
-                <label className="lr-label required">Duration (days)</label>
+                <label className="lr-label required">Durée (jours)</label>
                 <input
                   type="number"
                   name="periode"
@@ -323,7 +347,7 @@ function EmployeeView() {
               </div>
             </div>
             <div className="lr-form-group">
-              <label className="lr-label required">Leave Type</label>
+              <label className="lr-label required">Type de congé</label>
               <select name="type_conge" className="lr-select" value={editForm.type_conge} onChange={handleEditChange} required>
                 {Object.values(CONGE_TYPES).map(t => (
                   <option key={t} value={t}>{LEAVE_TYPE_ICONS[t]} {formatLabel(t)}</option>
@@ -331,7 +355,7 @@ function EmployeeView() {
               </select>
             </div>
             <div className="lr-form-group">
-              <label className="lr-label">Reason <span className="lr-optional">(optional)</span></label>
+              <label className="lr-label">Motif <span className="lr-optional">(optionnel)</span></label>
               <textarea
                 name="motif"
                 className="lr-textarea"
@@ -349,7 +373,7 @@ function EmployeeView() {
 
 // ─── Admin / HR View ─────────────────────────────────────────────────────────
 
-function AdminView() {
+function AdminView({ externalSearch = '' }) {
   const toast = useApiToast();
   const [requests, setRequests] = useState([]);
   const [employes, setEmployes] = useState([]);
@@ -361,7 +385,7 @@ function AdminView() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterEmploye, setFilterEmploye] = useState('');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(externalSearch);
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -370,6 +394,10 @@ function AdminView() {
   const [rejectModal, setRejectModal] = useState(null);
 
   useEffect(() => { loadData(); }, [filterStatus, filterType, filterEmploye]);
+
+  useEffect(() => {
+    setSearch(externalSearch);
+  }, [externalSearch]);
 
   //charger tout ce dont l’Admin/RH a besoin
   async function loadData() {
@@ -396,8 +424,8 @@ function AdminView() {
     try {
       await congesAPI.updateStatus(id, status);
       toast.success(
-        status === 'approved' ? 'Approved' : 'Rejected',
-        `Leave request has been ${status}.`
+        status === 'approved' ? 'Approuvée' : 'Refusée',
+        `La demande de congé a été ${status === 'approved' ? 'approuvée' : 'refusée'}.`
       );
       loadData();
     } catch (err) { toast.error(err); }
@@ -405,11 +433,11 @@ function AdminView() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm("Are you sure you want to delete this leave request?")) return;
+    if (!window.confirm("Voulez-vous vraiment supprimer cette demande de congé ?")) return;
     setActionLoading(id + 'delete');
     try {
       await congesAPI.delete(id);
-      toast.success('Deleted', 'Leave request deleted successfully.');
+      toast.success('Supprimée', 'Demande de congé supprimée avec succès.');
       loadData();
     } catch (err) { toast.error(err); }
     finally { setActionLoading(null); }
@@ -423,13 +451,13 @@ function AdminView() {
   async function handleCreate(e) {
     e.preventDefault();
     if (!createForm.employeId || !createForm.date_debut || !createForm.periode) {
-      toast.error({ message: 'Please fill in all required fields.' });
+      toast.error({ message: 'Veuillez remplir tous les champs obligatoires.' });
       return;
     }
     setCreateLoading(true);
     try {
       await congesAPI.createAdmin({ ...createForm, periode: Number(createForm.periode) });
-      toast.success('Created', 'Leave request created successfully.');
+      toast.success('Créée', 'Demande de congé créée avec succès.');
       setShowCreateModal(false);
       setCreateForm({ employeId: '', date_debut: '', periode: '', type_conge: 'annual', motif: '' });
       loadData();
@@ -457,20 +485,20 @@ function AdminView() {
       {/* Header */}
       <div className="lr-header">
         <div className="lr-header-text">
-          <h1 className="lr-title">Leave Requests</h1>
-          <p className="lr-subtitle">Review, approve, or reject employee leave requests.</p>
+          <h1 className="lr-title">Demandes de congés</h1>
+          <p className="lr-subtitle">Examinez, approuvez ou refusez les demandes de congés des employés.</p>
         </div>
         <button className="lr-btn lr-btn-primary" onClick={() => setShowCreateModal(true)}>
-          <span>＋</span> Create Request
+          <span>＋</span> Créer une demande
         </button>
       </div>
 
       {/* Stats */}
       <div className="lr-stats-row">
         <StatCard icon="📋" label="Total" value={stats.total ?? 0} color="#6366f1" />
-        <StatCard icon="⏳" label="Pending" value={stats.pending ?? 0} color="#f59e0b" />
-        <StatCard icon="✅" label="Approved" value={stats.approved ?? 0} color="#10b981" />
-        <StatCard icon="❌" label="Rejected" value={stats.rejected ?? 0} color="#ef4444" />
+        <StatCard icon="⏳" label="En attente" value={stats.pending ?? 0} color="#f59e0b" />
+        <StatCard icon="✅" label="Approuvées" value={stats.approved ?? 0} color="#10b981" />
+        <StatCard icon="❌" label="Refusées" value={stats.rejected ?? 0} color="#ef4444" />
       </div>
 
       {/* Filters */}
@@ -478,24 +506,24 @@ function AdminView() {
         <input
           type="text"
           className="lr-input lr-search"
-          placeholder="🔍  Search employee or reason…"
+          placeholder="🔍  Rechercher un employé ou un motif..."
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
         <select className="lr-select lr-select-sm" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
+          <option value="">Tous les statuts</option>
+          <option value="pending">En attente</option>
+          <option value="approved">Approuvé</option>
+          <option value="rejected">Refusé</option>
         </select>
         <select className="lr-select lr-select-sm" value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option value="">All Types</option>
+          <option value="">Tous les types</option>
           {Object.values(CONGE_TYPES).map(t => (
             <option key={t} value={t}>{formatLabel(t)}</option>
           ))}
         </select>
         <select className="lr-select lr-select-sm" value={filterEmploye} onChange={e => setFilterEmploye(e.target.value)}>
-          <option value="">All Employees</option>
+          <option value="">Tous les employés</option>
           {employes.map(e => (
             <option key={e.id} value={e.id}>
               {e.nom} {e.prenom}
@@ -503,7 +531,7 @@ function AdminView() {
           ))}
         </select>
         {hasFilters && (
-          <button className="lr-btn lr-btn-ghost" onClick={clearFilters} title="Clear filters">✕ Clear</button>
+          <button className="lr-btn lr-btn-ghost" onClick={clearFilters} title="Réinitialiser les filtres">✕ Réinitialiser</button>
         )}
       </div>
 
@@ -513,26 +541,26 @@ function AdminView() {
       ) : filtered.length === 0 ? (
         <div className="lr-empty">
           <div className="lr-empty-icon">🔍</div>
-          <h3>{hasFilters ? 'No results found' : 'No leave requests yet'}</h3>
-          <p>{hasFilters ? 'Try adjusting your filters.' : 'Requests will appear here once submitted.'}</p>
-          {hasFilters && <button className="lr-btn lr-btn-outline" onClick={clearFilters}>Clear Filters</button>}
+          <h3>{hasFilters ? 'Aucun résultat trouvé' : 'Aucune demande de congé pour le moment'}</h3>
+          <p>{hasFilters ? 'Essayez d\'ajuster vos filtres.' : 'Les demandes apparaîtront ici une fois soumises.'}</p>
+          {hasFilters && <button className="lr-btn lr-btn-outline" onClick={clearFilters}>Réinitialiser les filtres</button>}
         </div>
       ) : (
         <div className="lr-table-container">
           <div className="lr-table-meta">
-            <span className="lr-table-count">{filtered.length} request{filtered.length !== 1 ? 's' : ''}</span>
+            <span className="lr-table-count">{filtered.length} demande{filtered.length !== 1 ? 's' : ''}</span>
           </div>
           <div className="lr-table-wrapper">
             <table className="lr-table">
               <thead>
                 <tr>
-                  <th>Employee</th>
+                  <th>Employé</th>
                   <th>Type</th>
-                  <th>Start Date</th>
-                  <th>Duration</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Submitted</th>
+                  <th>Date de début</th>
+                  <th>Durée</th>
+                  <th>Motif</th>
+                  <th>Statut</th>
+                  <th>Soumise le</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -571,17 +599,17 @@ function AdminView() {
                                 className="lr-action-btn approve"
                                 disabled={!!actionLoading}
                                 onClick={() => handleStatusAction(req.id, 'approved')}
-                                title="Approve"
+                                title="Approuver"
                               >
-                                {actionLoading === req.id + 'approved' ? '…' : '✓ Approve'}
+                                {actionLoading === req.id + 'approved' ? '…' : '✓ Approuver'}
                               </button>
                               <button
                                 className="lr-action-btn reject"
                                 disabled={!!actionLoading}
                                 onClick={() => handleStatusAction(req.id, 'rejected')}
-                                title="Reject"
+                                title="Refuser"
                               >
-                                {actionLoading === req.id + 'rejected' ? '…' : '✕ Reject'}
+                                {actionLoading === req.id + 'rejected' ? '…' : '✕ Refuser'}
                               </button>
                             </>
                           ) : (
@@ -589,9 +617,9 @@ function AdminView() {
                               className="lr-action-btn reset"
                               disabled={!!actionLoading}
                               onClick={() => handleStatusAction(req.id, 'pending')}
-                              title="Reset to Pending"
+                              title="Réinitialiser"
                             >
-                              ↺ Reset
+                              ↺ Réinitialiser
                             </button>
                           )}
                           <button
@@ -599,7 +627,7 @@ function AdminView() {
                             style={{ marginLeft: '4px' }}
                             disabled={!!actionLoading}
                             onClick={() => handleDelete(req.id)}
-                            title="Delete"
+                            title="Supprimer"
                           >
                             {actionLoading === req.id + 'delete' ? '…' : '🗑️'}
                           </button>
@@ -618,21 +646,21 @@ function AdminView() {
       <Modal
         isOpen={showCreateModal}
         onClose={() => { setShowCreateModal(false); }}
-        title="Add Request"
+        title="Ajouter une demande"
         footer={
           <>
-            <button className="lr-btn lr-btn-outline" onClick={() => setShowCreateModal(false)}>Cancel</button>
+            <button className="lr-btn lr-btn-outline" onClick={() => setShowCreateModal(false)}>Annuler</button>
             <button className="lr-btn lr-btn-primary" onClick={handleCreate} disabled={createLoading}>
-              {createLoading ? 'Creating…' : 'Create Request'}
+              {createLoading ? 'Création...' : 'Créer la demande'}
             </button>
           </>
         }
       >
         <form className="lr-form" onSubmit={handleCreate}>
           <div className="lr-form-group">
-            <label className="lr-label required">Employee</label>
+            <label className="lr-label required">Employé</label>
             <select name="employeId" className="lr-select" value={createForm.employeId} onChange={handleCreateChange} required>
-              <option value="">Select employee…</option>
+              <option value="">Sélectionner un employé...</option>
               {employes.map(e => (
                 <option key={e.id} value={e.id}>{e.nom} {e.prenom}</option>
               ))}
@@ -640,16 +668,16 @@ function AdminView() {
           </div>
           <div className="lr-form-row">
             <div className="lr-form-group">
-              <label className="lr-label required">Start Date</label>
+              <label className="lr-label required">Date de début</label>
               <input type="date" name="date_debut" className="lr-input" value={createForm.date_debut} onChange={handleCreateChange} required />
             </div>
             <div className="lr-form-group">
-              <label className="lr-label required">Duration (days)</label>
+              <label className="lr-label required">Durée (jours)</label>
               <input type="number" name="periode" className="lr-input" value={createForm.periode} onChange={handleCreateChange} min="1" required />
             </div>
           </div>
           <div className="lr-form-group">
-            <label className="lr-label required">Leave Type</label>
+            <label className="lr-label required">Type de congé</label>
             <select name="type_conge" className="lr-select" value={createForm.type_conge} onChange={handleCreateChange} required>
               {Object.values(CONGE_TYPES).map(t => (
                 <option key={t} value={t}>{LEAVE_TYPE_ICONS[t]} {formatLabel(t)}</option>
@@ -657,8 +685,8 @@ function AdminView() {
             </select>
           </div>
           <div className="lr-form-group">
-            <label className="lr-label">Reason <span className="lr-optional">(optional)</span></label>
-            <textarea name="motif" className="lr-textarea" value={createForm.motif} onChange={handleCreateChange} rows={3} placeholder="Add a reason…" />
+            <label className="lr-label">Motif <span className="lr-optional">(optionnel)</span></label>
+            <textarea name="motif" className="lr-textarea" value={createForm.motif} onChange={handleCreateChange} rows={3} placeholder="Ajouter un motif..." />
           </div>
         </form>
       </Modal>
@@ -670,10 +698,12 @@ function AdminView() {
 
 export default function CongesPage() {
   const { user } = useContext(AuthContext);
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('search') || '';
   const role = user?.role;
 
   if (role === ROLES.ADMIN || role === ROLES.RH) {
-    return <AdminView />;
+    return <AdminView externalSearch={urlSearch} />;
   }
-  return <EmployeeView />;
+  return <EmployeeView externalSearch={urlSearch} />;
 }

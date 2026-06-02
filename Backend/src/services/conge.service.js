@@ -11,10 +11,17 @@ const POPULATE_EMPLOYE = [
 ];
 
 class CongeService {
+  async _syncEmployeeLeaveStatuses() {
+    const employeService = require('./employe.service');
+    return employeService.syncLeaveStatuses();
+  }
+
   /**
    * Admin/RH: get ALL leave requests with optional filters
    */
   async getAllConges(filters = {}) {
+    await this._syncEmployeeLeaveStatuses();
+
     const query = {};
     if (filters.employeId) query.employe = filters.employeId;
     if (filters.status) query.status = filters.status;
@@ -33,6 +40,8 @@ class CongeService {
    * Employee: get ONLY their own leave requests
    */
   async getMyConges(userId) {
+    await this._syncEmployeeLeaveStatuses();
+
     const employe = await Employe.findOne({ utilisateur: userId });
     if (!employe) {
       throw new ApiError(404, 'Employee profile not found for this user');
@@ -44,6 +53,8 @@ class CongeService {
   }
 
   async getCongeById(id) {
+    await this._syncEmployeeLeaveStatuses();
+
     const conge = await Conge.findById(id).populate(POPULATE_EMPLOYE);
     if (!conge) throw new ApiError(404, 'Leave request not found');
     return conge;
@@ -126,25 +137,28 @@ class CongeService {
       id,
       { status },
       { new: true, runValidators: true }
-    ).populate(POPULATE_EMPLOYE);
+    );
 
     if (!conge) throw new ApiError(404, 'Leave request not found');
-    return conge;
+    await this._syncEmployeeLeaveStatuses();
+    return Conge.findById(conge._id).populate(POPULATE_EMPLOYE);
   }
 
   async updateConge(id, data) {
     const conge = await Conge.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,
-    }).populate(POPULATE_EMPLOYE);
+    });
 
     if (!conge) throw new ApiError(404, 'Leave request not found');
-    return conge;
+    await this._syncEmployeeLeaveStatuses();
+    return Conge.findById(conge._id).populate(POPULATE_EMPLOYE);
   }
 
   async deleteConge(id) {
     const conge = await Conge.findByIdAndDelete(id);
     if (!conge) throw new ApiError(404, 'Leave request not found');
+    await this._syncEmployeeLeaveStatuses();
     return { message: 'Leave request deleted successfully' };
   }
 
@@ -152,6 +166,7 @@ class CongeService {
     const conge = await Conge.findById(id);
     if (!conge) throw new ApiError(404, 'Leave request not found');
     await conge.prolonger(joursSupplementaires);
+    await this._syncEmployeeLeaveStatuses();
     return Conge.findById(conge._id).populate(POPULATE_EMPLOYE);
   }
 
@@ -159,6 +174,8 @@ class CongeService {
    * Stats for Admin/RH dashboard
    */
   async getStats() {
+    await this._syncEmployeeLeaveStatuses();
+
     const [total, pending, approved, rejected] = await Promise.all([
       Conge.countDocuments(),
       Conge.countDocuments({ status: 'pending' }),

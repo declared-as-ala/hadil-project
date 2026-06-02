@@ -18,16 +18,11 @@ console.log('✅ Config loaded:', { env: config.env, port: config.port });
 const authRoutes = require('./routes/auth.routes');
 const usersRoutes = require('./routes/users.routes');
 const employesRoutes = require('./routes/employes.routes');
-const stagiairesRoutes = require('./routes/stagiaires.routes');
+
 const absencesRoutes = require('./routes/absences.routes');
-const demandesRoutes = require('./routes/demandes.routes');
 const congesRoutes = require('./routes/conges.routes');
 const heuresSupplementairesRoutes = require('./routes/heuresSupplementaires.routes');
 const messagesRoutes = require('./routes/messages.routes');
-const projetsRoutes = require('./routes/projets.routes');
-const tachesRoutes = require('./routes/taches.routes');
-const reunionsRoutes = require('./routes/reunions.routes');
-const contratsRoutes = require('./routes/contrats.routes');
 const demandeDocumentsRoutes = require('./routes/demandeDocuments.routes');
 const postesRoutes = require('./routes/postes.routes');
 const affectationsRoutes = require('./routes/affectations.routes');
@@ -62,16 +57,11 @@ const startServer = () => {
 
   // HR Management routes
   app.use('/api/employes', employesRoutes);
-  app.use('/api/stagiaires', stagiairesRoutes);
+
   app.use('/api/absences', absencesRoutes);
-  app.use('/api/demandes', demandesRoutes);
   app.use('/api/conges', congesRoutes);
   app.use('/api/heures-supplementaires', heuresSupplementairesRoutes);
   app.use('/api/messages', messagesRoutes);
-  app.use('/api/projets', projetsRoutes);
-  app.use('/api/taches', tachesRoutes);
-  app.use('/api/reunions', reunionsRoutes);
-  app.use('/api/contrats', contratsRoutes);
   app.use('/api/documents-admin', demandeDocumentsRoutes);
   app.use('/api/postes', postesRoutes);
   app.use('/api/affectations', affectationsRoutes);
@@ -92,7 +82,23 @@ const startServer = () => {
 
 // Connect to database and start server
 connectDB()
-  .then(() => {
+  .then(async () => {
+    // Run DB Cleanups to enforce "Admin is not an Employee"
+    try {
+      const User = require('./models/User.model');
+      const Employe = require('./models/Employe.model');
+      const adminUsers = await User.find({ role: 'admin' }, '_id');
+      const adminIds = adminUsers.map(u => u._id);
+      
+      if (adminIds.length > 0) {
+        const deletedResult = await Employe.deleteMany({ utilisateur: { $in: adminIds } });
+        if (deletedResult.deletedCount > 0) {
+          console.log(`🧹 DB Cleanup: Deleted ${deletedResult.deletedCount} employee profile(s) associated with admin accounts.`);
+        }
+      }
+    } catch (err) {
+      console.error('🧹 DB Cleanup Error:', err.message);
+    }
     startServer();
   })
   .catch((err) => {
