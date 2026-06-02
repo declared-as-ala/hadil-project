@@ -12,11 +12,11 @@ const {
 // All routes protected
 router.use(protect);
 
-// GET /api/employes - Admin/RH/Employe/Stagiaire (Directory access)
-router.get('/', authorize('admin', 'rh', 'employe', 'stagiaire'), employeController.getAllEmployes);
+// GET /api/employes - Admin/RH/Employe (Directory access)
+router.get('/', authorize('admin', 'rh', 'employe'), employeController.getAllEmployes);
 
-// GET /api/employes/:id - Admin/RH/Employe/Stagiaire
-router.get('/:id', authorize('admin', 'rh', 'employe', 'stagiaire'), validate(employeParamsSchema), employeController.getEmployeById);
+// GET /api/employes/:id - Admin/RH/Employe
+router.get('/:id', authorize('admin', 'rh', 'employe'), validate(employeParamsSchema), employeController.getEmployeById);
 
 // POST /api/employes - Admin/RH only
 router.post('/', authorize('admin', 'rh'), validate(createEmployeSchema), employeController.createEmploye);

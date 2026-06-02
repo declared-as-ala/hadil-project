@@ -1,18 +1,17 @@
+/* eslint-env node */
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const config = require('../config/env');
 const User = require('../models/User.model');
 const Employe = require('../models/Employe.model');
-const Stagiaire = require('../models/Stagiaire.model');
 const Absence = require('../models/Absence.model');
-const DemandeEtReclamation = require('../models/DemandeEtReclamation.model');
+const DemandeDocument = require('../models/DemandeDocument.model');
 const Conge = require('../models/Conge.model');
 const HeureSupplementaire = require('../models/HeureSupplementaire.model');
 const Message = require('../models/Message.model');
-const Projet = require('../models/Projet.model');
-const Tache = require('../models/Tache.model');
-const Reunion = require('../models/Reunion.model');
-const Contrat = require('../models/Contrat.model');
+const Affectation = require('../models/Affectation.model');
+const Poste = require('../models/Poste.model');
+
 
 const seedDatabase = async () => {
   try {
@@ -23,16 +22,15 @@ const seedDatabase = async () => {
     await Promise.all([
       User.deleteMany({}),
       Employe.deleteMany({}),
-      Stagiaire.deleteMany({}),
+
       Absence.deleteMany({}),
-      DemandeEtReclamation.deleteMany({}),
+      DemandeDocument.deleteMany({}),
       Conge.deleteMany({}),
       HeureSupplementaire.deleteMany({}),
       Message.deleteMany({}),
-      Projet.deleteMany({}),
-      Tache.deleteMany({}),
-      Reunion.deleteMany({}),
-      Contrat.deleteMany({}),
+      Affectation.deleteMany({}),
+      Poste.deleteMany({}),
+
     ]);
     console.log('Cleared all collections');
 
@@ -75,22 +73,26 @@ const seedDatabase = async () => {
       role: 'employe',
     });
 
-    const stagiaireUser = await User.create({
-      nom: 'Bernard',
-      prenom: 'Pierre',
-      email: 'pierre.bernard@hr.com',
-      adresse: '654 Intern Blvd',
-      passwordHash,
-      role: 'stagiaire',
-    });
+
 
     console.log('Created users');
 
     // Create employees
+    const rhEmploye = await Employe.create({
+      utilisateur: rhUser._id,
+      nom: 'Ressource',
+      prenom: 'RH',
+      poste: 'RH',
+      dateEmbauche: new Date('2022-01-01'),
+      telephone: '',
+      status: 'actif',
+    });
+
     const employe1 = await Employe.create({
       utilisateur: employeUser1._id,
+      nom: 'Dupont',
+      prenom: 'Jean',
       poste: 'Developpeur Senior',
-      departement: 'IT',
       dateEmbauche: new Date('2023-01-15'),
       telephone: '+1234567890',
       status: 'actif',
@@ -98,8 +100,9 @@ const seedDatabase = async () => {
 
     const employe2 = await Employe.create({
       utilisateur: employeUser2._id,
+      nom: 'Martin',
+      prenom: 'Sophie',
       poste: 'Chef de Projet',
-      departement: 'Management',
       dateEmbauche: new Date('2022-06-01'),
       telephone: '+0987654321',
       status: 'actif',
@@ -107,17 +110,7 @@ const seedDatabase = async () => {
 
     console.log('Created employees');
 
-    // Create stagiaire
-    const stagiaire = await Stagiaire.create({
-      utilisateur: stagiaireUser._id,
-      sujetDeStage: 'Developpement d\'une application HR',
-      encadrant: employe1._id,
-      dateDebut: new Date('2024-01-01'),
-      dateFin: new Date('2024-06-30'),
-      status: 'actif',
-    });
 
-    console.log('Created stagiaire');
 
     // Create absences
     await Absence.create({
@@ -137,18 +130,19 @@ const seedDatabase = async () => {
     console.log('Created absences');
 
     // Create demandes
-    await DemandeEtReclamation.create({
-      sujet: 'Demande de formation',
-      description: 'Je souhaite suivre une formation en React',
+    await DemandeDocument.create({
+      typeDocument: 'attestation_travail',
+      description: 'Je souhaite recevoir une attestation de travail pour mon dossier bancaire.',
       employe: employe1._id,
-      status: 'pending',
+      status: 'en_attente',
     });
 
-    await DemandeEtReclamation.create({
-      sujet: 'Reclamation materiel',
-      description: 'Mon ordinateur est tres lent',
+    await DemandeDocument.create({
+      typeDocument: 'attestation_salaire',
+      description: 'Pour un dossier de credit.',
       employe: employe2._id,
-      status: 'in_progress',
+      status: 'acceptee',
+      commentaireAdmin: 'Valide et pret.',
     });
 
     console.log('Created demandes');
@@ -175,78 +169,9 @@ const seedDatabase = async () => {
 
     console.log('Created heures supplementaires');
 
-    // Create projet
-    const projet = await Projet.create({
-      nom: 'Projet HR System',
-      description: 'Developpement du systeme de gestion RH',
-      status: 'in_progress',
-      dateDebut: new Date('2024-01-01'),
-      dateFin: new Date('2024-12-31'),
-      chefDeProjet: employe2._id,
-      membres: [employe1._id],
-    });
 
-    console.log('Created projet');
 
-    // Create taches
-    await Tache.create({
-      projet: projet._id,
-      description: 'Implementer le module d\'authentication',
-      status: 'completed',
-      assigneA: employe1._id,
-      priorite: 'high',
-      dateEcheance: new Date('2024-03-01'),
-    });
 
-    await Tache.create({
-      projet: projet._id,
-      description: 'Creer le module de gestion des conges',
-      status: 'in_progress',
-      assigneA: employe1._id,
-      priorite: 'medium',
-      dateEcheance: new Date('2024-06-01'),
-    });
-
-    console.log('Created taches');
-
-    // Create reunion
-    await Reunion.create({
-      projet: projet._id,
-      date_debut: new Date('2024-04-01T10:00:00Z'),
-      date_fin: new Date('2024-04-01T11:00:00Z'),
-      description: 'Reunion de lancement du sprint 2',
-      lieu: 'Salle de conference A',
-      participants: [employe1._id, employe2._id],
-      organisateur: employe2._id,
-    });
-
-    console.log('Created reunion');
-
-    // Create contrats
-    await Contrat.create({
-      employe: employe1._id,
-      type: 'CDI',
-      salaire: 50000,
-      clausesGeneral: 'Clauses standards CDI',
-      posteTravail: 'Developpeur Full Stack',
-      date_de_debut: new Date('2023-01-15'),
-      periode_essai: 3,
-      status: 'actif',
-    });
-
-    await Contrat.create({
-      employe: employe2._id,
-      type: 'CDD',
-      salaire: 55000,
-      clausesGeneral: 'Clauses standards CDD',
-      posteTravail: 'Chef de Projet IT',
-      date_de_debut: new Date('2022-06-01'),
-      date_de_fin: new Date('2025-06-01'),
-      periode_essai: 2,
-      status: 'actif',
-    });
-
-    console.log('Created contrats');
 
     // Create messages
     await Message.create({
@@ -265,6 +190,48 @@ const seedDatabase = async () => {
       lu: false,
     });
 
+    // Create initial Postes and Affectations for the seeded employees
+    const posteDev = await Poste.create({
+      nom_poste: 'Developpeur Senior',
+      salaire_base: 2500,
+      prix_heure_sup: 20,
+    });
+
+    const postePm = await Poste.create({
+      nom_poste: 'Chef de Projet',
+      salaire_base: 3000,
+      prix_heure_sup: 25,
+    });
+
+    const posteRh = await Poste.create({
+      nom_poste: 'RH',
+      salaire_base: 2800,
+      prix_heure_sup: 22,
+    });
+
+    await Affectation.create({
+      employe: rhEmploye._id,
+      poste: posteRh._id,
+      date_debut: new Date('2022-01-01'),
+      date_fin: null,
+    });
+
+    await Affectation.create({
+      employe: employe1._id,
+      poste: posteDev._id,
+      date_debut: new Date('2023-01-15'),
+      date_fin: null,
+    });
+
+    await Affectation.create({
+      employe: employe2._id,
+      poste: postePm._id,
+      date_debut: new Date('2022-06-01'),
+      date_fin: null,
+    });
+
+    console.log('Created postes and affectations');
+
     console.log('Created messages');
 
     console.log('\n===== SEEDING COMPLETE =====');
@@ -273,7 +240,6 @@ const seedDatabase = async () => {
     console.log(`RH: ${rhUser.email}`);
     console.log(`Employe 1: ${employeUser1.email}`);
     console.log(`Employe 2: ${employeUser2.email}`);
-    console.log(`Stagiaire: ${stagiaireUser.email}`);
 
     process.exit(0);
   } catch (error) {
