@@ -3,8 +3,8 @@ const ApiResponse = require('../utils/ApiResponse');
 const employeService = require('../services/employe.service');
 
 const getAllEmployes = asyncHandler(async (req, res) => {
-  const { status, departement } = req.query;
-  const employes = await employeService.getAllEmployes({ status, departement });
+  const { status } = req.query;
+  const employes = await employeService.getAllEmployes({ status });
 
   res.status(200).json(new ApiResponse(200, employes, 'Employes retrieved successfully'));
 });
