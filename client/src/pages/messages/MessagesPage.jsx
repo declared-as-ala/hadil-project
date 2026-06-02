@@ -1,44 +1,48 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect, useRef, useMemo } from 'react';
+
 import { messagesAPI } from '../../api/messages.api';
 import { employesAPI } from '../../api/employes.api';
 import { useAuth } from '../../hooks/useAuth';
 import { useApiToast } from '../../components/common/Toast';
-import ConfirmDialog from '../../components/common/ConfirmDialog';
 import Modal from '../../components/common/Modal';
-import EmptyState from '../../components/common/EmptyState';
-import Badge from '../../components/common/Badge';
-import { formatDate, relativeTime } from '../../utils/formatters';
-import '../CrudPage.css';
+import { relativeTime } from '../../utils/formatters';
 import './Messages.css';
 
 export default function MessagesPage() {
   const { user, refreshUser } = useAuth();
-  const { t } = useTranslation();
   const toast = useApiToast();
+  
   const [messages, setMessages] = useState([]);
   const [employes, setEmployes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState('inbox'); // 'inbox' | 'sent'
-  const [showForm, setShowForm] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [form, setForm] = useState({ destinataireId: '', message: '' });
-  const [formLoading, setFormLoading] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  
+  const [activeConversationId, setActiveConversationId] = useState(null);
+  
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [newChatTarget, setNewChatTarget] = useState('');
+  
+  const [messageText, setMessageText] = useState('');
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  useEffect(() => { loadData(); }, [view]);
+  useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, activeConversationId]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   async function loadData() {
     setLoading(true);
     try {
-      // Messages store Employe IDs — only pass the filter when we have a real ID
       const employeeId = user?.employeeId;
       const isValidId = (v) => v && v !== 'null' && v !== 'undefined';
 
-      const msgParams = isValidId(employeeId)
-        ? (view === 'inbox' ? { destinataireId: employeeId } : { expediteurId: employeeId })
-        : {}; // admin with no employee record: load all messages
+      // Load ALL messages involving the user
+      const msgParams = isValidId(employeeId) ? { participantId: employeeId } : {};
 
       const [mRes, eRes] = await Promise.all([
         messagesAPI.getAll(msgParams),
@@ -50,159 +54,257 @@ export default function MessagesPage() {
     finally { setLoading(false); }
   }
 
-  async function handleSend(e) {
-    e.preventDefault();
-    setFormLoading(true);
+  async function handleSend(destinataireId, text) {
+    if (!text.trim() || !destinataireId) return;
+    setSending(true);
     try {
-      await messagesAPI.send(form);
-      toast.success('Sent', 'Message has been sent.');
-      setShowForm(false);
-      setForm({ destinataireId: '', message: '' });
-      // If user had no employeeId, the backend just auto-created one — refresh to store it
+      await messagesAPI.send({ destinataireId, message: text });
+      setMessageText('');
+      setShowNewChat(false);
+      setNewChatTarget('');
+      
       const isValidId = (v) => v && v !== 'null' && v !== 'undefined';
       if (!isValidId(user?.employeeId)) await refreshUser();
-      loadData();
+      
+      await loadData();
+      if (!activeConversationId) {
+        setActiveConversationId(destinataireId);
+      }
     } catch (err) { toast.error(err); }
-    finally { setFormLoading(false); }
+    finally { setSending(false); }
   }
 
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    setDeleteLoading(true);
-    try {
-      await messagesAPI.delete(deleteTarget);
-      toast.success('Deleted', 'Message removed.');
-      setMessages((p) => p.filter((m) => m.id !== deleteTarget));
-      setDeleteTarget(null);
-    } catch (err) { toast.error(err); }
-    finally { setDeleteLoading(false); }
-  }
+  const markConversationAsRead = async (participantId) => {
+    const unreadMessages = messages.filter(m => 
+      !m.lu && m.expediteur?.id === participantId && m.destinataire?.id === user?.employeeId
+    );
+    
+    if (unreadMessages.length > 0) {
+      try {
+        await Promise.all(unreadMessages.map(m => messagesAPI.markAsRead(m.id)));
+        setMessages(prev => prev.map(m => 
+          (m.expediteur?.id === participantId && !m.lu) ? { ...m, lu: true } : m
+        ));
+      } catch (e) { /* ignore */ }
+    }
+  };
 
-  async function handleMarkRead(id) {
-    try {
-      await messagesAPI.markAsRead(id);
-      setMessages((prev) => prev.map((m) => m.id === id ? { ...m, lu: true } : m));
-    } catch (err) { /* silently fail */ }
-  }
+  const handleSelectConversation = (participantId) => {
+    setActiveConversationId(participantId);
+    markConversationAsRead(participantId);
+  };
 
-  function getOtherParty(msg) {
-    if (view === 'inbox') return msg.expediteur || {};
-    return msg.destinataire || {};
-  }
+  // Group messages by conversation
+  const conversations = useMemo(() => {
+    const groups = {};
+    const myId = user?.employeeId;
+    
+    messages.forEach(msg => {
+      const isSentByMe = msg.expediteur?.id === myId;
+      const otherUser = isSentByMe ? msg.destinataire : msg.expediteur;
+      if (!otherUser) return;
+      
+      const otherId = otherUser.id;
+      if (!groups[otherId]) {
+        groups[otherId] = {
+          user: otherUser,
+          messages: [],
+          lastMessage: null,
+          unreadCount: 0
+        };
+      }
+      
+      groups[otherId].messages.push(msg);
+      
+      if (!isSentByMe && !msg.lu) {
+        groups[otherId].unreadCount++;
+      }
+      
+      if (!groups[otherId].lastMessage || new Date(msg.date || msg.createdAt) > new Date(groups[otherId].lastMessage?.date || groups[otherId].lastMessage?.createdAt || 0)) {
+        groups[otherId].lastMessage = msg;
+      }
+    });
+    
+    return Object.values(groups).sort((a, b) => {
+      const dateA = new Date(a.lastMessage?.date || a.lastMessage?.createdAt || 0);
+      const dateB = new Date(b.lastMessage?.date || b.lastMessage?.createdAt || 0);
+      return dateB - dateA;
+    });
+  }, [messages, user?.employeeId]);
+
+  const activeConversation = conversations.find(c => c.user.id === activeConversationId);
+  // Sort messages oldest first for chat view
+  const activeMessages = activeConversation ? [...activeConversation.messages].sort((a, b) => new Date(a.date || a.createdAt) - new Date(b.date || b.createdAt)) : [];
 
   if (loading) return <div className="crud-loading"><div className="spinner" /></div>;
 
   return (
-    <div>
-      <div className="page-header">
-        <div><h1>{t('messages.title')}</h1><p>{t('messages.subtitle')}</p></div>
-        <div className="page-header-actions">
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>{t('messages.new')}</button>
+    <div className="fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="page-header" style={{ marginBottom: 16, flexShrink: 0 }}>
+        <div>
+          <h1>Messages</h1>
+          <p>Messagerie interne entre employés.</p>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="tabs">
-        <button className={`tab ${view === 'inbox' ? 'active' : ''}`} onClick={() => setView('inbox')}>
-          {t('messages.tabs.inbox')} {messages.filter((m) => !m.lu).length > 0 && (
-            <span style={{ background: 'var(--color-danger)', color: '#fff', borderRadius: 99, padding: '1px 7px', fontSize: 'var(--text-xs)', marginLeft: 6 }}>
-              {messages.filter((m) => !m.lu).length}
-            </span>
-          )}
-        </button>
-        <button className={`tab ${view === 'sent' ? 'active' : ''}`} onClick={() => setView('sent')}>{t('messages.tabs.sent')}</button>
-      </div>
-
-      <div className="table-container">
-        {messages.length === 0 ? (
-          <EmptyState icon="💬" title={view === 'inbox' ? 'No messages' : 'No sent messages'} description={view === 'inbox' ? 'Your inbox is empty.' : 'You haven\'t sent any messages yet.'} />
-        ) : (
-          <div className="message-list">
-            {messages.map((msg) => {
-              const other = getOtherParty(msg);
-              return (
-                <div
-                  key={msg.id}
-                  className={`message-item ${!msg.lu && view === 'inbox' ? 'message-unread' : ''}`}
-                  onClick={() => { handleMarkRead(msg.id); setSelectedMessage(msg); }}
+      <div className="messages-layout">
+        {/* Sidebar */}
+        <div className="messages-sidebar">
+          <div className="messages-sidebar-header">
+            <h2>Conversations</h2>
+            <button className="new-chat-btn" onClick={() => setShowNewChat(true)}>
+              ✉️ Nouveau message
+            </button>
+          </div>
+          <div className="conversation-list">
+            {conversations.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--gray-500)', fontSize: '0.9rem' }}>
+                Aucune conversation
+              </div>
+            ) : (
+              conversations.map(conv => (
+                <div 
+                  key={conv.user.id} 
+                  className={`conversation-item ${activeConversationId === conv.user.id ? 'active' : ''}`}
+                  onClick={() => handleSelectConversation(conv.user.id)}
                 >
-                  <div className="message-avatar">
-                    {(other.nom?.[0] || 'M').toUpperCase()}
+                  <div className="conversation-avatar">
+                    {(conv.user.nom?.[0] || 'U').toUpperCase()}
                   </div>
-                  <div className="message-content">
-                    <div className="message-header-row">
-                      <span className="message-sender">{other.nom} {other.prenom}</span>
-                      <span className="message-date">{relativeTime(msg.date || msg.createdAt)}</span>
+                  <div className="conversation-info">
+                    <div className="conversation-header">
+                      <div className="conversation-name">{conv.user.nom} {conv.user.prenom}</div>
+                      <div className="conversation-date">{relativeTime(conv.lastMessage?.date || conv.lastMessage?.createdAt)}</div>
                     </div>
-                    <div className="message-preview">{msg.message}</div>
-                    <div className="message-meta">
-                      {msg.lu ? <Badge variant="gray">{t('messages.read')}</Badge> : <Badge variant="info">{t('messages.unread')}</Badge>}
+                    <div className="conversation-preview">
+                      {conv.lastMessage?.expediteur?.id === user?.employeeId ? 'Vous: ' : ''}
+                      {conv.lastMessage?.message}
                     </div>
                   </div>
-                  <button className="btn-icon danger" title="Delete" onClick={(e) => { e.stopPropagation(); setDeleteTarget(msg.id); }}>
-                    🗑️
-                  </button>
+                  {conv.unreadCount > 0 && (
+                    <div className="conversation-unread-badge">{conv.unreadCount}</div>
+                  )}
                 </div>
-              );
-            })}
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Chat Area */}
+        {activeConversation ? (
+          <div className="chat-area">
+            <div className="chat-header">
+              <div className="conversation-avatar" style={{ width: 40, height: 40, fontSize: '0.9rem' }}>
+                {(activeConversation.user.nom?.[0] || 'U').toUpperCase()}
+              </div>
+              <div>
+                <h3>{activeConversation.user.nom} {activeConversation.user.prenom}</h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--gray-500)' }}>{activeConversation.user.poste || activeConversation.user.utilisateur?.email}</span>
+              </div>
+            </div>
+            
+            <div className="chat-messages">
+              {activeMessages.map(msg => {
+                const isSentByMe = msg.expediteur?.id === user?.employeeId;
+                return (
+                  <div key={msg.id} className={`chat-message-row ${isSentByMe ? 'sent' : 'received'}`}>
+                    <div className="chat-bubble">
+                      {msg.message}
+                    </div>
+                    <div className="chat-time">
+                      {new Date(msg.date || msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+            
+            <div className="chat-input-area">
+              <form 
+                className="chat-input-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend(activeConversation.user.id, messageText);
+                }}
+              >
+                <textarea
+                  className="chat-input-textarea"
+                  placeholder="Écrivez un message..."
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend(activeConversation.user.id, messageText);
+                    }
+                  }}
+                />
+                <button 
+                  type="submit" 
+                  className="chat-send-btn" 
+                  disabled={!messageText.trim() || sending}
+                  title="Envoyer"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <div className="chat-empty">
+            <div className="chat-empty-icon">💬</div>
+            <h3>Vos messages</h3>
+            <p>Sélectionnez une conversation ou démarrez-en une nouvelle.</p>
           </div>
         )}
       </div>
 
-      {/* New Message Modal */}
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="New Message"
-        footer={<>
-          <button className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSend} disabled={formLoading}>{formLoading ? 'Sending...' : 'Send'}</button>
-        </>}>
-        <form onSubmit={handleSend}>
-          <div className="form-group">
-            <label className="form-label form-label-required">To</label>
-            <select className="form-select" value={form.destinataireId} onChange={(e) => setForm({ ...form, destinataireId: e.target.value })} required>
-              <option value="">Select recipient...</option>
-              {employes.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.nom} {e.prenom}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label form-label-required">Message</label>
-            <textarea className="form-textarea" rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required />
-          </div>
-        </form>
+      {/* New Chat Modal */}
+      <Modal 
+        isOpen={showNewChat} 
+        onClose={() => setShowNewChat(false)} 
+        title="Nouvelle conversation"
+        footer={
+          <>
+            <button className="btn btn-outline" onClick={() => setShowNewChat(false)}>Annuler</button>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => handleSend(newChatTarget, messageText)} 
+              disabled={!newChatTarget || !messageText.trim() || sending}
+            >
+              {sending ? 'Envoi...' : 'Envoyer'}
+            </button>
+          </>
+        }
+      >
+        <div className="form-group">
+          <label className="form-label form-label-required">Destinataire</label>
+          <select 
+            className="form-select" 
+            value={newChatTarget} 
+            onChange={(e) => setNewChatTarget(e.target.value)}
+          >
+            <option value="">Sélectionner un employé...</option>
+            {employes.filter(e => e.id !== user?.employeeId).map(e => (
+              <option key={e.id} value={e.id}>{e.nom} {e.prenom} - {e.poste}</option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label form-label-required">Message</label>
+          <textarea 
+            className="form-textarea" 
+            rows={4} 
+            value={messageText} 
+            onChange={(e) => setMessageText(e.target.value)} 
+            placeholder="Votre premier message..."
+          />
+        </div>
       </Modal>
-
-      {/* Message Detail Modal */}
-      {selectedMessage && (() => {
-        const other = view === 'inbox' ? selectedMessage.expediteur : selectedMessage.destinataire;
-        return (
-        <Modal isOpen={!!selectedMessage} onClose={() => setSelectedMessage(null)} title="Message" size="lg">
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div>
-                <strong>{view === 'inbox' ? t('messages.from') + ' ' : t('messages.to') + ' '}</strong>
-                {other?.nom || ''} {other?.prenom || ''}
-                {other?.utilisateur?.email && (
-                  <span style={{ color: 'var(--gray-400)', fontSize: 'var(--text-xs)', marginLeft: 6 }}>
-                    ({other.utilisateur.email})
-                  </span>
-                )}
-              </div>
-              <span style={{ color: 'var(--gray-400)', fontSize: 'var(--text-sm)' }}>
-                {formatDate(selectedMessage.date || selectedMessage.createdAt)}
-              </span>
-            </div>
-          </div>
-          <div style={{ background: 'var(--gray-50)', borderRadius: 'var(--border-radius)', padding: 16, fontSize: 'var(--text-sm)', lineHeight: 1.7, color: 'var(--gray-800)' }}>
-            {selectedMessage.message}
-          </div>
-        </Modal>
-        );
-      })()}
-
-      <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title={t('messages.deleteTitle')} message={t('messages.deleteMsg')} loading={deleteLoading} />
     </div>
   );
 }
